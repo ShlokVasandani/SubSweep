@@ -16,6 +16,8 @@ python -m subsweep.findings my_statement.csv             # findings, savings and
 python -m pytest
 ```
 
+PayPal sandbox commands are in [PayPal integration](#paypal-integration-sandbox) below.
+
 ## How detection works
 
 Recurring-charge detection is plain, explainable Python (no ML). Every threshold and keyword list lives in
@@ -68,6 +70,72 @@ listed (as dismissed) but leave the totals and the health score.
 
 80 and above reads "Healthy", 55-79 "Worth a look", below 55 "Needs attention". The formula, with your numbers
 filled in, is returned with every score. Mixed-currency statements are scored on the main currency.
+
+## PayPal integration (sandbox)
+
+SubSweep uses three PayPal developer-platform APIs, all against the **sandbox** (`api-m.sandbox.paypal.com`).
+Credentials come only from environment variables (`.env`, never committed). Endpoints and scopes below were
+checked against PayPal's published OpenAPI schemas.
+
+| Need | API | Endpoint | Scope |
+|------|-----|----------|-------|
+| Authentication | OAuth 2.0 client credentials | `POST /v1/oauth2/token` (Basic auth, `grant_type=client_credentials`) | n/a |
+| Live subscription status | Subscriptions | `GET /v1/billing/subscriptions/{id}`, `GET /v1/billing/plans/{id}` | `https://uri.paypal.com/services/subscriptions` |
+| Statement import and matching | Transaction Search | `GET /v1/reporting/transactions` (`fields=all`, max 31-day windows, up to 500 per page) | `https://uri.paypal.com/services/reporting/search/read` |
+
+**How it behaves**
+
+- The token is cached and refreshed 60 seconds before it expires. A 401 mid-session triggers one fresh token.
+- 429, 5xx and network errors are retried with exponential backoff (0.5s, 1s, 2s, 4s, capped at 8s; `Retry-After` is honoured).
+- Errors are friendly and secret-free. A 403 names the missing scope when the app's own token shows it lacks it.
+- Date ranges longer than 31 days are split into windows automatically; pages are followed to the end.
+- Transaction rows are filtered to payments (`T00xx` event codes) that are successful or pending. Every row keeps its
+  source: `paypal_api` for PayPal data, `upload:...` for your file. A bank row that mentions PayPal and matches a PayPal
+  payment (same amount and currency, dates within 3 days, or the same transaction ID) is kept once and marked
+  *confirmed by PayPal*, so nothing is counted twice.
+- Detected PayPal-billed subscriptions are matched to live PayPal subscriptions by subscription ID (PayPal marks these on
+  transactions as reference type `SUB`) or, failing that, by plan name and price. You then see status, next billing
+  date and last payment.
+- **Mismatch finding:** if PayPal says a subscription is `CANCELLED`, `SUSPENDED` or `EXPIRED` but your statement
+  keeps charging it, you get a high-severity `PAYPAL_MISMATCH` finding. A plan price that differs from the statement
+  price gives a low-severity note.
+- **SubSweep never cancels anything.** There is no cancel or suspend code. You get a link to PayPal's automatic
+  payments page to manage it yourself. Any non-GET call raises `ConfirmationRequired` unless explicitly confirmed;
+  the seed script asks you to type `yes`.
+
+**Important: whose point of view?** PayPal's Transaction Search and Subscriptions APIs are merchant-side: they show the
+business account that owns the app. In the sandbox demo, the app's business account *receives* the buyer's subscription
+payments, so SubSweep flips the sign to show them as what the subscriber pays. A real consumer product would need the
+subscriber's own PayPal data, which these APIs do not expose; that is why the main path is uploading a bank or PayPal
+activity CSV, with the sandbox used to demonstrate live status and verification.
+
+### Sandbox setup (about 10 minutes)
+
+1. Log in to the [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/), open **Apps & Credentials**, use
+   the Default Application (or **Create App**) in the sandbox, and copy the client ID and secret.
+2. Under **Testing Tools > Sandbox Accounts**, note your sandbox **personal** (buyer) account; **View/Edit Account**
+   shows its email and password.
+3. `cp .env.example .env` and fill in `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` (and optionally `PAYPAL_BUYER_EMAIL`).
+4. Preview, then seed the demo plans and subscriptions:
+   ```bash
+   python scripts/seed_paypal_sandbox.py --dry-run
+   python scripts/seed_paypal_sandbox.py
+   ```
+5. Open each printed approval link while signed in to [sandbox.paypal.com](https://sandbox.paypal.com/signin) as the
+   **buyer** and approve it. PayPal only allows approval in a browser. Then check:
+   ```bash
+   python scripts/seed_paypal_sandbox.py --status
+   python -m subsweep.paypal transactions --days 30
+   python -m pytest tests/integration -v      # live read-only checks; skipped without credentials
+   ```
+6. To demo a mismatch, cancel *FitPass Gym* as the buyer in the sandbox, then analyse a statement that still charges it.
+
+Things I could not confirm from PayPal's documentation, so check them when you first run live:
+whether your sandbox app needs the **Transaction Search** feature switched on (if it does not have the scope you will
+get a 403 that names `https://uri.paypal.com/services/reporting/search/read`), and that the sandbox "manage
+subscriptions" page is `https://www.sandbox.paypal.com/myaccount/autopay/` (the live page is
+`https://www.paypal.com/myaccount/autopay/`; set `PAYPAL_MANAGE_URL` to override). Sandbox accounts only generate the
+first payment when you approve a subscription, so longer payment history comes from the demo statement, not PayPal.
 
 Known limits: biweekly plans are not recognised, a single yearly charge cannot be detected, and the merchant
 cleaner only strips a curated list of cities, so unusual place names can survive into the merchant name.
