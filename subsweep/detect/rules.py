@@ -22,7 +22,7 @@ def _deep_merge(base: dict, over: dict) -> dict:
 def load_rules(path: str | Path | None = None, overrides: dict | None = None) -> dict:
     with open(path or DEFAULT_RULES_PATH, "r", encoding="utf-8") as fh:
         rules = yaml.safe_load(fh)
-    for section in ("grouping", "cycles", "amounts", "confidence", "exclusions", "categories"):
+    for section in ("grouping", "cycles", "amounts", "confidence", "exclusions", "categories", "findings"):
         if section not in rules:
             raise ValueError(f"rules.yaml is missing the '{section}' section")
     for c in CYCLE_NAMES:

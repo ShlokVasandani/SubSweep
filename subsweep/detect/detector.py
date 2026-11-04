@@ -182,7 +182,7 @@ class _Detector:
     def process_unit(self, charges: list[_Charge], key: str, currency: str, via_paypal: bool):
         r = self.rules
         charges = sorted(charges, key=lambda c: (c.ordinal, c.txn_id))
-        cat = categorize([c.name for c in charges], r)
+        cat = categorize([key] + [c.name for c in charges], r)   # key carries alias spellings (spotifyab -> spotify)
         if cat.excluded:
             self._exclude(charges, key, f"category:{cat.name}",
                           f"Matches '{cat.keyword}' ({cat.name.replace('_', ' ')}); these are everyday purchases, not subscriptions."

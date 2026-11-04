@@ -138,3 +138,40 @@ categories:
     subscription_like: true
     discretionary: true
     keywords: [xbox, playstation, "ps plus", "nintendo online", steam, "ea play"]
+
+# ---------------------------------------------------------------------------
+# Phase 3: findings engine
+# ---------------------------------------------------------------------------
+findings:
+  duplicate:
+    severity: high
+  price_hike:
+    high_if_pct_at_least: 25        # otherwise medium
+  # POSSIBLY_FORGOTTEN is a visible points score. It is a guess: a statement cannot show whether you use something.
+  forgotten:
+    min_score_to_flag: 4
+    medium_if_score_at_least: 5     # otherwise low
+    long_run_months: 6              # billed for at least this long
+    overlap_min_services: 3         # this many active subscriptions in one discretionary category
+    points:
+      discretionary_category: 2
+      long_run: 2
+      identical_amounts: 1          # same amount every time looks like autopay nobody revisits
+      overlapping_services: 1
+  # ZOMBIE needs a usage signal supplied by the user (last used date or trial end date).
+  zombie:
+    min_days_after_last_use: 45
+  annual_renewal:
+    window_days: 30
+    high_if_days_at_most: 7
+  # Health score = 100 - A - B - C (clamped to 0..100)
+  #   A = savings_weight * (potential annual savings / annual subscription spend)
+  #   B = min(finding_cap, sum of severity points over open findings)
+  #   C = min(sprawl_cap, sprawl_points * max(0, active subscriptions - sprawl_free))
+  health:
+    savings_weight: 50
+    severity_points: {high: 10, medium: 5, low: 2}
+    finding_cap: 30
+    sprawl_free: 8
+    sprawl_points: 2
+    sprawl_cap: 10

@@ -423,3 +423,9 @@ def test_alias_matches_where_similarity_alone_would_not():
     no_alias = load_rules(overrides={"grouping": {"aliases": {"ytb": "ytb"}}})
     g2 = group_merchants(["Ytb", "Youtube"], no_alias)
     assert g2["Ytb"] != g2["Youtube"]
+
+
+def test_category_uses_alias_spelling_of_the_group_key():
+    # "Spotifyab" is not a keyword on its own; the alias in the group key is what classifies it as music.
+    s = one(run(series("Spotifyab", D(2026, 1, 5), 30, [10.99] * 6)))
+    assert s.category == "music_and_audio" and s.discretionary
