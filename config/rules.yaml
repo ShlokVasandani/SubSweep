@@ -161,6 +161,10 @@ findings:
   # ZOMBIE needs a usage signal supplied by the user (last used date or trial end date).
   zombie:
     min_days_after_last_use: 45
+  # PAYPAL_MISMATCH compares the statement with live PayPal sandbox data (Phase 4).
+  paypal:
+    grace_days: 1                   # charges up to this many days after PayPal's cancel/suspend time are ignored
+    amount_tolerance_pct: 1         # plan price vs statement price differences above this are noted
   annual_renewal:
     window_days: 30
     high_if_days_at_most: 7

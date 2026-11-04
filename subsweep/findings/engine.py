@@ -24,6 +24,7 @@ PRICE_HIKE = "PRICE_HIKE"
 POSSIBLY_FORGOTTEN = "POSSIBLY_FORGOTTEN"
 ZOMBIE = "ZOMBIE"
 ANNUAL_RENEWAL_SOON = "ANNUAL_RENEWAL_SOON"
+PAYPAL_MISMATCH = "PAYPAL_MISMATCH"
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 
 CATEGORY_LABEL = {
@@ -292,6 +293,55 @@ def _renewals(active: pd.DataFrame, today: date, rules: dict) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# PAYPAL_MISMATCH (statement vs live PayPal sandbox status)
+# ---------------------------------------------------------------------------
+def _paypal_mismatches(active: pd.DataFrame, tx: pd.DataFrame | None, status: dict, rules: dict) -> list[Finding]:
+    cfg = rules["findings"]["paypal"]
+    out = []
+    for _, s in active.iterrows():
+        live = status.get(s["id"])
+        if live is None:
+            continue
+        cur, cost = s["currency"], annual_cost(s)
+        if live.status in ("CANCELLED", "SUSPENDED", "EXPIRED") and live.status_update_time:
+            since = live.status_update_time.date()
+            after = [(d, a) for d, a in _charge_dates(tx, list(s["txn_ids"])) if d > since + timedelta(days=cfg["grace_days"])]
+            if not after:
+                continue
+            total = sum(a for _, a in after)
+            word = live.status.lower()
+            reason = (
+                f"PayPal shows your {s['merchant']} subscription ({live.id}) as {word} since {fdate(since)}, but your "
+                f"statement still has {len(after)} charge{'s' if len(after) != 1 else ''} after that, {money(total, cur)} in "
+                f"total, the latest on {fdate(after[-1][0])}. At {_price_text(s)} that is about {money(cost, cur)} a year. "
+                "The charge may be coming from another billing source, or the cancellation may not have reached the "
+                "merchant. You can review it in your PayPal account."
+            )
+            out.append(Finding(
+                id=_fid(PAYPAL_MISMATCH, [s["id"]]), type=PAYPAL_MISMATCH, severity="high",
+                title=f"{s['merchant']}: charged after PayPal {word}", reason=reason, merchant=s["merchant"], currency=cur,
+                subscription_ids=[s["id"]], annual_cost=round(cost, 2), potential_savings_annual=round(cost, 2),
+                evidence={"kind": "cancelled_but_charged", "paypal_subscription_id": live.id, "paypal_status": live.status,
+                          "status_since": since, "charges_after": len(after), "total_after": round(total, 2),
+                          "latest_charge": after[-1][0], "manage_url": live.manage_url},
+            ))
+        elif live.plan_amount and live.plan_currency == cur and s["current_amount"] > 0:
+            diff = abs(live.plan_amount - float(s["current_amount"])) / float(s["current_amount"]) * 100
+            if diff > cfg["amount_tolerance_pct"]:
+                reason = (f"PayPal lists the {live.plan_name or s['merchant']} plan at {money(live.plan_amount, cur)} per "
+                          f"{CYCLE_NOUN[s['cycle']]}, but your statement shows {money(s['current_amount'], cur)}. "
+                          "That can be tax or a plan change; it is worth a quick look.")
+                out.append(Finding(
+                    id=_fid(PAYPAL_MISMATCH, [s["id"]]), type=PAYPAL_MISMATCH, severity="low",
+                    title=f"{s['merchant']}: price differs from PayPal", reason=reason, merchant=s["merchant"], currency=cur,
+                    subscription_ids=[s["id"]], annual_cost=round(cost, 2), potential_savings_annual=0.0,
+                    evidence={"kind": "amount_differs", "paypal_subscription_id": live.id, "plan_amount": live.plan_amount,
+                              "statement_amount": float(s["current_amount"]), "manage_url": live.manage_url},
+                ))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # totals and health score
 # ---------------------------------------------------------------------------
 def compute_savings(findings: list[Finding], active: pd.DataFrame) -> dict[str, float]:
@@ -313,6 +363,10 @@ def compute_savings(findings: list[Finding], active: pd.DataFrame) -> dict[str, 
             for sid in f.subscription_ids:
                 if sid != keep and sid in annual:
                     per_sub[sid] = (f.currency, annual[sid][1])
+        elif f.type == PAYPAL_MISMATCH:
+            sid = f.subscription_ids[0]
+            if f.evidence["kind"] == "cancelled_but_charged":
+                per_sub[sid] = (f.currency, annual[sid][1])
         elif f.type in (POSSIBLY_FORGOTTEN, ZOMBIE):
             sid = f.subscription_ids[0]
             if f.type == POSSIBLY_FORGOTTEN and sid in kept:
@@ -355,12 +409,14 @@ def generate_findings(
     today: date | None = None,
     dismissed: Iterable[str] = (),
     usage_signals: dict | None = None,
+    paypal_status: dict | None = None,
 ) -> FindingsReport:
     """Classify detected subscriptions into findings and compute spend, savings and health score.
 
     today          date used for "renewal soon" (defaults to the latest charge in `transactions`)
     dismissed      finding IDs the user dismissed or marked "still using"; they stay listed as dismissed
     usage_signals  {merchant_key | subscription_id: {"last_used": date, "trial_end": date}} for ZOMBIE
+    paypal_status  {subscription_id: LiveSubscription} from subsweep.paypal.sync.match_paypal_subscriptions
     """
     rules = rules or load_rules()
     dismissed = set(dismissed)
@@ -380,6 +436,7 @@ def generate_findings(
         findings += _forgotten(active, rules)
         findings += _zombies(active, transactions, usage_signals or {}, rules)
         findings += _renewals(active, today, rules)
+        findings += _paypal_mismatches(active, transactions, paypal_status or {}, rules)
     for f in findings:
         if f.id in dismissed:
             f.status = "dismissed"
