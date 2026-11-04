@@ -10,6 +10,7 @@ SubSweep never cancels anything or sends any message on your behalf.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python -m subsweep                                       # then open http://127.0.0.1:8000 and click "Try the sample data"
 python -m subsweep.ingest sample_data/card_split.csv     # parse + clean a statement
 python -m subsweep.detect my_statement.csv --excluded    # find recurring charges, show what was excluded
 python -m subsweep.findings my_statement.csv             # findings, savings and health score
@@ -201,6 +202,55 @@ retries once without it.
 
 Question routing is rule-based first. The model is only asked to pick an analysis when the rules cannot, and only for questions
 that look financial; its answer must be a JSON intent from a fixed whitelist with validated parameters.
+
+## The web app
+
+`python -m subsweep` starts one FastAPI server that serves both the API and the frontend (plain HTML, CSS and vanilla JS
+modules, no build step). Set `PORT`/`HOST` to change `127.0.0.1:8000`. Everything it needs, including Chart.js and the two
+fonts, is vendored under `web/vendor/` (licences in `web/vendor/THIRD_PARTY.md`), so it runs fully offline apart from the
+optional PayPal and Anthropic calls.
+
+| Screen | What it does |
+|--------|--------------|
+| **Landing** | A scroll-driven story, then the upload. Drag and drop (or choose) a CSV, or click **Try the sample data**. The format is detected automatically; if it can't be, a dialog lets you pick the date, description and amount columns (and flip the sign for exports that show purchases as positive numbers). A privacy note states exactly what can leave your computer |
+| **Overview** | Health score ring (with the formula), yearly and monthly spend, potential savings, the top findings, a yearly-cost chart, and the PayPal status panel (clearly marked "Demo data" in mock mode) |
+| **Subscriptions** | Sortable, filterable table (search, cycle, status, PayPal only). Each row expands to a charge-history chart, the reason for the confidence score, what PayPal says, and a "Manage in PayPal" link. On phones the table becomes cards |
+| **Findings** | Cards grouped by severity. Each shows the plain-English explanation (with **Show data used**), the "why we think so" points for guesses, a **Draft a message** panel (copy only, never sent), and **Dismiss**, **Still using it** and **Undo**. Decisions are remembered in a small local SQLite file |
+| **Ask** | Chat over your own numbers, with suggested questions, a refusal for investment advice and off-topic requests, "nothing to report" for empty results, and **Show data used** on every answer |
+
+Every screen has loading skeletons, empty states and friendly error messages (a stopped server, a wrong file type, a file
+that is too large, columns that can't be read). Nothing in the interface can cancel a subscription or send a message.
+
+**Design.** A calm, trustworthy finance look with a cinematic layer: real glass (`backdrop-filter` blur with a
+pointer-following sheen), a drifting aurora background, Fraunces (a warm serif) for headlines and numbers, and Hanken
+Grotesk for the interface. The background **mood changes with scroll** (midnight, deep sea, dusk, ember, dawn), the landing
+page unravels a messy statement into monthly rails as you scroll, and finding cards arrive from depth. Coral is the one
+alert colour; everything else is neutral. There is a night theme and a day theme.
+
+**Accessibility.** Skip link, landmarks, full keyboard use with a visible focus ring, `aria-sort`, `aria-expanded` and live
+regions, alt text and a data table for every chart, and `prefers-reduced-motion` support (no pinning, scrubbing, parallax or
+count-ups; everything is drawn in its finished state). Text contrast is checked by tests against the real CSS tokens and
+every mood palette at its worst case: body text clears WCAG AAA (7:1) on glass and AA (4.5:1) on the bare background.
+
+**Security and privacy.** Statements are processed in memory and never written to disk (only your dismiss decisions are
+stored). Uploads are limited to 5 MB, must be `.csv`, `.tsv` or `.txt`, and are rejected if they look binary. A strict
+Content-Security-Policy (`script-src 'self'`, no inline script, no external hosts) and the usual hardening headers are sent on
+every response; the session cookie is `HttpOnly` and `SameSite=Strict`; AI use is capped per statement. Text from your statement
+is inserted into the page with `textContent` only, which a test enforces by scanning the code and by loading a statement with
+a hostile merchant name and filename in a real browser.
+
+**The demo statement.** `python scripts/make_demo_data.py` writes `sample_data/demo_statement.csv`: 24 months and 588
+transactions generated from a fixed seed, with about ten subscriptions and these planted findings: a **duplicate** (Streamly
+billed monthly and yearly), a **price hike** (Netflix $15.49 to $17.99), a **forgotten** subscription (Hulu), an **annual
+renewal** coming due (a domain, about 12 Nov 2026), and, once the PayPal demo data is merged in, a **cancelled-in-PayPal but
+still-charging** subscription (FitPass Gym). Groceries, fuel, coffee, rideshare and marketplace shopping are included and
+must not be flagged. It covers 24 months rather than 12 because a yearly renewal can only be detected from two yearly charges
+about a year apart, so a 12-month window could never contain a renewal and show it coming due.
+
+**Browser tests.** `python -m pytest tests/ui` drives Chromium through Playwright against a live server: keyboard use, theme
+persistence and repaint, the scroll-driven theme change, reduced motion, the full sample flow, error states, the column
+mapper, three viewport widths with no horizontal scroll, accessible names, and hostile text. They need Node and Playwright
+(`npm i -g playwright`) and are skipped automatically otherwise.
 
 Known limits: biweekly plans are not recognised, a single yearly charge cannot be detected, and the merchant
 cleaner only strips a curated list of cities, so unusual place names can survive into the merchant name.

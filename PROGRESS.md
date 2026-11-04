@@ -31,6 +31,11 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   guardrails, JSONL audit log, `data_used` on every answer), `python -m subsweep.ai`. Works without a key via templates.
   260 new tests with a scripted fake model; 93 mutations of the AI layer all caught.
 
+- **Phase 6 – frontend + API**: FastAPI app (`subsweep/api/`) serving a no-build vanilla-JS frontend (`web/`): cinematic scroll-driven
+  landing (mood blends by scroll, pinned "unravel" scene, 3D card deck), glass UI, night/day themes, five screens with loading /
+  empty / error states, Chart.js (vendored) charts, mapper dialog, SQLite decisions store, reproducible 24-month demo statement.
+  Contrast, icons, CSP-safety and escaping are tested statically; 19 real-browser checks run through Playwright.
+
 ## Next
 - Add `ANTHROPIC_API_KEY` and run the AI layer live once (`python -m subsweep.ai mock --explain --ask "..."`): the request
   shape and error mapping are tested against a fake client, but no real API call has been made from the cloud session.
@@ -68,6 +73,12 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   questions are refused locally with no model call.
 - Fixed in passing: a catastrophic-backtracking (ReDoS) bug in the first redaction pattern, found by the test run;
   a key-fragment leak in the audit log ordering, found by mutation testing.
+- Demo statement spans 24 months (not 12): yearly renewals need two yearly charges to be detected.
+- Charts use vendored Chart.js (the stack named Plotly or Chart.js); fonts are vendored Fraunces + Hanken Grotesk (OFL).
+- The web app keeps analyses in memory per session cookie (max 12, 6h); only dismiss decisions go to SQLite (`data/subsweep.db`).
+- Phase 1 touched again (cosmetic): known brand names keep their capitalisation (FitPass, CloudBox, YouTube, iCloud...).
+- Bugs found by tests this phase and fixed: day-theme background not repainted on toggle; non-object `mapping` JSON caused a 500;
+  `el()` ignored camelCase inline styles; chart y-axis rounded cents away.
 - Weekly cycles do not allow missed weeks (a 14-day gap is not "a skipped week"); biweekly plans are unsupported.
 - A merchant is split into plans (monthly vs yearly) only when amount tiers form concurrent cycles; otherwise one
   subscription with irregular amounts or a sustained price change.
