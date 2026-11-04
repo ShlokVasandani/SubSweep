@@ -1,0 +1,140 @@
+# SubSweep recurring-charge detection rules.
+# Every number and keyword list below is editable; the detector reads this file at runtime.
+# Amounts are compared as absolute debit values. Credits/refunds are ignored.
+
+# ---------------------------------------------------------------------------
+# Rule 1: merchant grouping
+# ---------------------------------------------------------------------------
+grouping:
+  # rapidfuzz token_set_ratio (0-100). "netflix com" vs "netflix india" -> 100 after ignore_tokens.
+  similarity_threshold: 85
+  # Tokens removed before comparing (geography, legal and billing noise).
+  ignore_tokens: [india, inc, llc, ltd, pvt, limited, payments, payment, subscription, subscriptions,
+                  services, service, com, www, bill, billing, intl, international, online, mumbai,
+                  bangalore, bengaluru, delhi, london, dublin, usa, uk, the, and, "&"]
+  # Token-level aliases applied before comparing (processor spellings -> brand).
+  aliases:
+    spotifyab: spotify
+    amzn: amazon
+    mktp: marketplace
+    ytb: youtube
+    googlepay: google
+
+# ---------------------------------------------------------------------------
+# Rule 2: cycle detection (gap lengths in days)
+# ---------------------------------------------------------------------------
+cycles:
+  # Weekly never allows missed cycles: a 14-day gap is two interleaved things or a habit, not "a skipped week".
+  weekly:    {min_days: 6,   max_days: 8,   min_occurrences: 4, full_confidence_occurrences: 8, allow_missed: false}
+  monthly:   {min_days: 28,  max_days: 33,  min_occurrences: 3, full_confidence_occurrences: 6}
+  quarterly: {min_days: 85,  max_days: 95,  min_occurrences: 3, full_confidence_occurrences: 4}
+  yearly:    {min_days: 355, max_days: 375, min_occurrences: 2, full_confidence_occurrences: 3}
+  # A gap of k cycles (k-1 missed) still fits if k - 1 <= max_missed_cycles.
+  max_missed_cycles: 2
+  # Extra tolerance (days) per missed cycle, and for a single shifted charge just outside a window.
+  extra_days_per_missed_cycle: 3
+  shift_tolerance_days: 3
+  # At least this share of gaps must fit the chosen cycle.
+  min_fit_share: 0.6
+  # Charges to the same merchant whose amounts differ by more than this ratio are candidate separate plans
+  # (e.g. a monthly 10.99 plan and a yearly 109.99 plan). They are split only if at least two of the
+  # amount tiers each form their own cycle AND overlap in time; otherwise the merchant stays one
+  # subscription with irregular amounts (or a big price change).
+  amount_split_ratio: 1.6
+  # A group that does not fit one cycle may be two interleaved subscriptions (e.g. two accounts).
+  try_split_interleaved: true
+
+# ---------------------------------------------------------------------------
+# Rule 3: amount stability and price changes
+# ---------------------------------------------------------------------------
+amounts:
+  stable_tolerance_pct: 5          # within 5% of its level (median of its price run) = stable
+  price_change_min_pct: 5          # increase must be >= 5%
+  price_change_min_cycles: 2       # ...and hold for at least 2 charges at the new price
+  report_decreases: true           # also record sustained decreases (not treated as findings)
+
+# ---------------------------------------------------------------------------
+# Rule 4: confidence = sum(weight * component), then capped by occurrence count
+# ---------------------------------------------------------------------------
+confidence:
+  weights: {regularity: 0.40, stability: 0.25, occurrences: 0.35}
+  # Per-gap regularity credit: on-cycle 1.0, shifted just outside the window, or covering missed cycles.
+  gap_credit: {on_cycle: 1.0, shifted: 0.8, per_missed_cycle_penalty: 0.15}
+  # With very few charges we cannot be sure, whatever the other scores say.
+  max_by_occurrences: {2: 0.65, 3: 0.85}
+  min_confidence_to_report: 0.5
+  # A subscription is "active" if its last charge is within this many cycles of the statement end.
+  active_within_cycles: 1.5
+
+# ---------------------------------------------------------------------------
+# Rule 5: false-positive exclusions
+# ---------------------------------------------------------------------------
+exclusions:
+  # Merchants matching these phrases are NEVER excluded by category (checked first).
+  never_exclude: ["amazon prime", "prime video", "uber one", "swiggy one", "zomato gold",
+                  "walmart plus", "instacart plus", "doordash dashpass", "costco membership"]
+
+  # Weekly "cycles" must have near-constant amounts; coffee/lunch habits do not.
+  weekly_requires_stable_share: 0.8
+
+  # Non-subscription-like merchants whose amounts keep changing are usage/habit spend.
+  # (Merchants in a subscription_like category keep lower confidence instead of being excluded.)
+  variable_amount:
+    min_stable_share: 0.5
+
+  # Charges bunched in a burst (>= burst_min_charges within burst_window_days, with varying amounts)
+  # are one-off repeat purchases. Window < 14 so a normal weekly cadence is never a burst.
+  burst_window_days: 7
+  burst_min_charges: 3
+
+# Keyword phrases match whole words in the cleaned merchant name (lower-cased).
+#   excluded: true      -> group is dropped and listed in the "excluded" output with the reason
+#   discretionary: true -> Phase 3 may treat it as POSSIBLY_FORGOTTEN material
+#   subscription_like   -> irregular amounts reduce confidence instead of excluding
+categories:
+  groceries:
+    excluded: true
+    keywords: [grocery, groceries, supermarket, kroger, safeway, aldi, lidl, tesco, costco, walmart,
+               "whole foods", "trader joe", publix, wegmans, bigbasket, blinkit, zepto, dmart,
+               "big bazaar", "reliance fresh", instamart, "more retail", "star bazaar"]
+  fuel:
+    excluded: true
+    keywords: [shell, chevron, exxon, mobil, bp, texaco, sunoco, "indian oil", iocl, hpcl, bpcl,
+               "petrol pump", petrol, gasoline, fuel, "gas station", speedway, "76"]
+  dining_and_delivery:
+    excluded: true
+    keywords: [restaurant, cafe, coffee, starbucks, mcdonald, mcdonalds, subway, pizza, domino,
+               dominos, kfc, swiggy, zomato, doordash, "uber eats", grubhub, "blue bottle", bakery]
+  rideshare_and_transit:
+    excluded: true
+    keywords: [uber, ola, lyft, rapido, metro, parking, toll, fastag]
+  retail_marketplace:
+    excluded: true
+    keywords: [amazon, marketplace, ebay, flipkart, myntra, target, etsy, aliexpress, walmart]
+  streaming:
+    subscription_like: true
+    discretionary: true
+    keywords: [netflix, hulu, "disney plus", disney, hbo, "hbo max", "prime video", peacock,
+               paramount, crunchyroll, hotstar, jiocinema, sonyliv, zee5, youtube, "apple tv", dazn]
+  music_and_audio:
+    subscription_like: true
+    discretionary: true
+    keywords: [spotify, "apple music", "youtube music", tidal, deezer, pandora, audible, gaana, wynk]
+  software_and_cloud:
+    subscription_like: true
+    discretionary: false
+    keywords: [adobe, microsoft, office365, "microsoft 365", dropbox, icloud, "google one", notion,
+               github, openai, anthropic, chatgpt, canva, figma, "1password", lastpass, zoom, slack]
+  news_and_learning:
+    subscription_like: true
+    discretionary: true
+    keywords: [nytimes, "new york times", wsj, economist, medium, substack, coursera, udemy,
+               masterclass, duolingo, kindle]
+  fitness_and_wellness:
+    subscription_like: true
+    discretionary: true
+    keywords: [gym, fitness, peloton, "cult fit", cultfit, strava, headspace, calm, planet]
+  gaming:
+    subscription_like: true
+    discretionary: true
+    keywords: [xbox, playstation, "ps plus", "nintendo online", steam, "ea play"]
