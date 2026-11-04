@@ -21,8 +21,13 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   logic), `scripts/seed_paypal_sandbox.py`, `python -m subsweep.paypal`, `PAYPAL_MISMATCH` finding, skipped-without-
   credentials integration tests. 129 new tests with all HTTP mocked; 53 PayPal-side mutations all caught.
 
+- **PayPal mock mode**: `PAYPAL_MODE=mock` or automatic fallback when a seeded sandbox subscription is
+  `APPROVAL_PENDING`; bundled `data/paypal_mock.json` (4 subscriptions, 18 charges; FitPass cancelled-but-charged);
+  `subsweep/paypal/provider.py`; labelled `paypal_mock` / `data_source="mock"`. 44 new tests, 34 mutations all caught.
+  Live approval is optional and manual. `seed.py` untouched.
+
 ## Next
-- Run the PayPal parts live (needs your sandbox credentials; PayPal hosts are not reachable from the cloud session).
+- Run the PayPal parts live (optional now: the demo no longer depends on it) (needs your sandbox credentials; PayPal hosts are not reachable from the cloud session).
 - Phase 5 – AI layer (explainer, message drafter, Q&A, audit log, redaction). Needs `ANTHROPIC_API_KEY`.
 
 ## Decisions recorded
@@ -44,6 +49,9 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   (`data/paypal_seed.json`, git-ignored) and from `SUB` references on transactions.
 - Sandbox-only guard: a non-sandbox `PAYPAL_API_BASE` is refused unless `SUBSWEEP_ALLOW_LIVE=1`.
 - Phase 3 touched: new `PAYPAL_MISMATCH` finding and an optional `paypal_status` argument; new `findings.paypal` config.
+- Mock fallback is all-or-nothing (never a live/demo mix) and clearly labelled; lookup errors are not masked.
+- Phase 1 touched (tiny fix): the merchant cleaner no longer strips a balanced closing parenthesis, so
+  "Streamly Plus (Annual)" keeps its name; capitalisation also works after a leading "(".
 - Weekly cycles do not allow missed weeks (a 14-day gap is not "a skipped week"); biweekly plans are unsupported.
 - A merchant is split into plans (monthly vs yearly) only when amount tiers form concurrent cycles; otherwise one
   subscription with irregular amounts or a sustained price change.

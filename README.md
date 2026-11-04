@@ -109,7 +109,30 @@ payments, so SubSweep flips the sign to show them as what the subscriber pays. A
 subscriber's own PayPal data, which these APIs do not expose; that is why the main path is uploading a bank or PayPal
 activity CSV, with the sandbox used to demonstrate live status and verification.
 
-### Sandbox setup (about 10 minutes)
+### Mock mode: the demo works without any PayPal setup
+
+Live PayPal is **optional**. Approving sandbox subscriptions is a manual step only a person can do in a browser, so
+SubSweep ships bundled demo data in [`data/paypal_mock.json`](data/paypal_mock.json): four fictional subscriptions
+(Streamly Plus, Streamly Plus (Annual), CloudBox Storage and FitPass Gym) with a few charges each, shaped like the real
+PayPal responses.
+
+- Set `PAYPAL_MODE=mock` and nothing else: no credentials, no network, no approval step.
+- In the default `PAYPAL_MODE=live`, if any of your seeded sandbox subscriptions is still `APPROVAL_PENDING` (not yet
+  approved by the buyer), SubSweep switches the **whole** PayPal view to the demo data and tells you why, rather than
+  mixing live statuses with demo charges. Once everything is approved, live data is used. A failed lookup is reported,
+  not hidden by the fallback.
+- Demo data is always labelled: transactions have source `paypal_mock` (live PayPal rows are `paypal_api`), the
+  subscriptions carry `data_source="mock"`, and the view includes the notice "Showing bundled demo data". It cannot be
+  mistaken for a live PayPal account.
+- The demo story is built in: Streamly Plus is billed monthly **and** yearly (a `DUPLICATE`), and FitPass Gym is
+  `CANCELLED` in PayPal on 11 Aug 2026 yet still charged on 10 Sep and 10 Oct (a `PAYPAL_MISMATCH`). The other three
+  subscriptions are `ACTIVE`.
+- `python -m subsweep.paypal status` and `transactions` honour the mode, and `PAYPAL_MOCK_FILE` points to your own file.
+  The seed script and the approval flow are unchanged.
+
+### Live sandbox setup (optional, about 10 minutes)
+
+Skip this section entirely if you are happy with mock mode.
 
 1. Log in to the [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/), open **Apps & Credentials**, use
    the Default Application (or **Create App**) in the sandbox, and copy the client ID and secret.
@@ -122,7 +145,8 @@ activity CSV, with the sandbox used to demonstrate live status and verification.
    python scripts/seed_paypal_sandbox.py
    ```
 5. Open each printed approval link while signed in to [sandbox.paypal.com](https://sandbox.paypal.com/signin) as the
-   **buyer** and approve it. PayPal only allows approval in a browser. Then check:
+   **buyer** and approve it. This is manual and optional: PayPal only allows approval in a browser, and until you do,
+   the app uses the demo data. Then check:
    ```bash
    python scripts/seed_paypal_sandbox.py --status
    python -m subsweep.paypal transactions --days 30
