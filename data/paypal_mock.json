@@ -1,0 +1,583 @@
+{
+  "_comment": "Bundled DEMO data for SubSweep's PayPal mock mode (PAYPAL_MODE=mock). Fictional services, not from any real PayPal account. Transactions use PayPal Transaction Search's shape from the merchant side; SubSweep flips them to the subscriber's view. FitPass Gym is CANCELLED in PayPal on 2026-08-11 but still charged on 2026-09-10 and 2026-10-10, which triggers the PAYPAL_MISMATCH finding.",
+  "subscriptions": [
+    {
+      "id": "I-MOCKSTREAMLYM",
+      "plan_id": "P-MOCK1",
+      "plan_name": "Streamly Plus",
+      "plan_amount": 9.99,
+      "plan_currency": "USD",
+      "plan_interval": "MONTH x1",
+      "status": "ACTIVE",
+      "status_update_time": "2026-06-05T09:00:00Z",
+      "start_time": "2026-06-05T09:00:00Z",
+      "next_billing_time": "2026-11-05T09:00:00Z",
+      "last_payment": {
+        "amount": 9.99,
+        "currency": "USD",
+        "time": "2026-10-05T09:00:00Z"
+      },
+      "failed_payments_count": 0
+    },
+    {
+      "id": "I-MOCKSTREAMLYA",
+      "plan_id": "P-MOCK2",
+      "plan_name": "Streamly Plus (Annual)",
+      "plan_amount": 99.99,
+      "plan_currency": "USD",
+      "plan_interval": "YEAR x1",
+      "status": "ACTIVE",
+      "status_update_time": "2024-10-08T09:00:00Z",
+      "start_time": "2024-10-08T09:00:00Z",
+      "next_billing_time": "2027-10-08T09:00:00Z",
+      "last_payment": {
+        "amount": 99.99,
+        "currency": "USD",
+        "time": "2026-10-08T09:00:00Z"
+      },
+      "failed_payments_count": 0
+    },
+    {
+      "id": "I-MOCKCLOUDBOX",
+      "plan_id": "P-MOCK3",
+      "plan_name": "CloudBox Storage",
+      "plan_amount": 2.99,
+      "plan_currency": "USD",
+      "plan_interval": "MONTH x1",
+      "status": "ACTIVE",
+      "status_update_time": "2026-06-03T09:00:00Z",
+      "start_time": "2026-06-03T09:00:00Z",
+      "next_billing_time": "2026-11-03T09:00:00Z",
+      "last_payment": {
+        "amount": 2.99,
+        "currency": "USD",
+        "time": "2026-10-03T09:00:00Z"
+      },
+      "failed_payments_count": 0
+    },
+    {
+      "id": "I-MOCKFITPASS",
+      "plan_id": "P-MOCK4",
+      "plan_name": "FitPass Gym",
+      "plan_amount": 24.0,
+      "plan_currency": "USD",
+      "plan_interval": "MONTH x1",
+      "status": "CANCELLED",
+      "status_update_time": "2026-08-11T14:30:00Z",
+      "start_time": "2026-06-10T09:00:00Z",
+      "next_billing_time": null,
+      "last_payment": {
+        "amount": 24.0,
+        "currency": "USD",
+        "time": "2026-10-10T09:00:00Z"
+      },
+      "failed_payments_count": 0
+    }
+  ],
+  "transactions": [
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYA01",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2024-10-08T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "99.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYA",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus (Annual)"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus (Annual)"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYA02",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2025-10-08T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "99.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYA",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus (Annual)"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus (Annual)"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXCLOUDBOX01",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-06-03T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "2.99"
+        },
+        "paypal_reference_id": "I-MOCKCLOUDBOX",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "CloudBox Storage"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "CloudBox Storage"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYM01",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-06-05T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "9.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYM",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXFITPASS01",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-06-10T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "24.00"
+        },
+        "paypal_reference_id": "I-MOCKFITPASS",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "FitPass Gym"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "FitPass Gym"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXCLOUDBOX02",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-07-03T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "2.99"
+        },
+        "paypal_reference_id": "I-MOCKCLOUDBOX",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "CloudBox Storage"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "CloudBox Storage"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYM02",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-07-05T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "9.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYM",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXFITPASS02",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-07-10T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "24.00"
+        },
+        "paypal_reference_id": "I-MOCKFITPASS",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "FitPass Gym"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "FitPass Gym"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXCLOUDBOX03",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-08-03T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "2.99"
+        },
+        "paypal_reference_id": "I-MOCKCLOUDBOX",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "CloudBox Storage"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "CloudBox Storage"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYM03",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-08-05T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "9.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYM",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXFITPASS03",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-08-10T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "24.00"
+        },
+        "paypal_reference_id": "I-MOCKFITPASS",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "FitPass Gym"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "FitPass Gym"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXCLOUDBOX04",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-09-03T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "2.99"
+        },
+        "paypal_reference_id": "I-MOCKCLOUDBOX",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "CloudBox Storage"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "CloudBox Storage"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYM04",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-09-05T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "9.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYM",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXFITPASS04",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-09-10T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "24.00"
+        },
+        "paypal_reference_id": "I-MOCKFITPASS",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "FitPass Gym"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "FitPass Gym"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXCLOUDBOX05",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-10-03T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "2.99"
+        },
+        "paypal_reference_id": "I-MOCKCLOUDBOX",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "CloudBox Storage"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "CloudBox Storage"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYM05",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-10-05T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "9.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYM",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXSTREAMLYA03",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-10-08T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "99.99"
+        },
+        "paypal_reference_id": "I-MOCKSTREAMLYA",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "Streamly Plus (Annual)"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "Streamly Plus (Annual)"
+          }
+        ]
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "MOCKTXFITPASS05",
+        "transaction_event_code": "T0002",
+        "transaction_status": "S",
+        "transaction_initiation_date": "2026-10-10T09:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "24.00"
+        },
+        "paypal_reference_id": "I-MOCKFITPASS",
+        "paypal_reference_id_type": "SUB",
+        "transaction_subject": "FitPass Gym"
+      },
+      "payer_info": {
+        "payer_name": {
+          "given_name": "Demo",
+          "surname": "Buyer"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_name": "FitPass Gym"
+          }
+        ]
+      }
+    }
+  ]
+}

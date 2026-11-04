@@ -66,11 +66,11 @@ def merge_sources(upload: pd.DataFrame, api: pd.DataFrame, window_days: int = DA
 
 
 def source_summary(df: pd.DataFrame) -> dict:
-    """Counts by origin, for the UI badge 'from your upload' vs 'from PayPal'."""
+    """Counts by origin, for the UI badge 'from your upload' vs 'from PayPal' (live) vs 'demo data' (mock)."""
     if df.empty:
-        return {"upload": 0, "paypal_api": 0, "confirmed_by_paypal": 0}
-    api = (df["source"] == "paypal_api").sum()
-    return {"upload": int(len(df) - api), "paypal_api": int(api),
+        return {"upload": 0, "paypal_api": 0, "paypal_mock": 0, "confirmed_by_paypal": 0}
+    api, mock = (df["source"] == "paypal_api").sum(), (df["source"] == "paypal_mock").sum()
+    return {"upload": int(len(df) - api - mock), "paypal_api": int(api), "paypal_mock": int(mock),
             "confirmed_by_paypal": int(df.get("confirmed_by_paypal_api", pd.Series(dtype=bool)).fillna(False).sum())}
 
 

@@ -42,6 +42,7 @@ class LiveSubscription:
     last_payment_time: datetime | None = None
     failed_payments_count: int = 0
     manage_url: str = ""
+    data_source: str = "live"          # "live" (PayPal sandbox) or "mock" (bundled demo data)
 
     @property
     def is_ended(self) -> bool:

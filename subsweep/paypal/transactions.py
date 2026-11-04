@@ -111,7 +111,7 @@ def _label(detail: dict, perspective: str) -> str:
     return info.get("transaction_subject") or info.get("transaction_note") or "PayPal payment"
 
 
-def to_transactions(details: list[dict], perspective: str = "payer") -> tuple[pd.DataFrame, dict]:
+def to_transactions(details: list[dict], perspective: str = "payer", source: str = "paypal_api") -> tuple[pd.DataFrame, dict]:
     """Convert Transaction Search details into the clean-transactions shape (plus paypal_subscription_id)."""
     if perspective not in ("payer", "merchant"):
         raise ValueError("perspective must be 'payer' or 'merchant'")
@@ -143,7 +143,7 @@ def to_transactions(details: list[dict], perspective: str = "payer") -> tuple[pd
         sub_id = info.get("paypal_reference_id") if info.get("paypal_reference_id_type") == "SUB" else ""
         recs.append({
             "date": day, "merchant_raw": raw, "merchant_clean": clean_merchant(raw) or raw, "amount": round(value, 2),
-            "currency": amt.get("currency_code", "USD"), "source": "paypal_api", "via_paypal": True,
+            "currency": amt.get("currency_code", "USD"), "source": source, "via_paypal": True,
             "source_ref": info.get("transaction_id", ""), "paypal_subscription_id": sub_id or "",
         })
     df = pd.DataFrame(recs, columns=["date", "merchant_raw", "merchant_clean", "amount", "currency", "source",

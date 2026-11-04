@@ -10,6 +10,7 @@ from .errors import PayPalNotConfigured
 
 SANDBOX_BASE = "https://api-m.sandbox.paypal.com"
 LIVE_BASE = "https://api-m.paypal.com"
+SANDBOX_MANAGE_URL = "https://www.sandbox.paypal.com/myaccount/autopay/"
 
 
 def load_dotenv(path: str | Path = ".env") -> None:

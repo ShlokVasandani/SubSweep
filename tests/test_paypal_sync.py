@@ -88,14 +88,14 @@ def test_each_bank_row_matches_at_most_one_api_row_so_real_repeats_survive():
 
 def test_unmatched_api_rows_are_added_with_their_own_source_label():
     m = merge_sources(upload([(D(2026, 10, 1), "Coffee", -3.0, False)]), api(("2026-10-05", 9.99, "TXA", "Streamly Plus", "I-1")))
-    assert source_summary(m) == {"upload": 1, "paypal_api": 1, "confirmed_by_paypal": 0}
+    assert source_summary(m) == {"upload": 1, "paypal_api": 1, "paypal_mock": 0, "confirmed_by_paypal": 0}
 
 
 def test_merge_with_empty_sides():
     a = api(("2026-10-05", 9.99, "TXA", "Streamly Plus", "I-1"))
     assert len(merge_sources(upload([]), a)) == 1
     assert len(merge_sources(upload([(D(2026, 10, 1), "Coffee", -3.0, False)]), a.iloc[0:0])) == 1
-    assert source_summary(merge_sources(upload([]), a.iloc[0:0])) == {"upload": 0, "paypal_api": 0, "confirmed_by_paypal": 0}
+    assert source_summary(merge_sources(upload([]), a.iloc[0:0])) == {"upload": 0, "paypal_api": 0, "paypal_mock": 0, "confirmed_by_paypal": 0}
 
 
 def test_merged_table_is_sorted_and_ids_are_unique():
