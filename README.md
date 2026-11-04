@@ -13,6 +13,7 @@ pip install -r requirements.txt
 python -m subsweep.ingest sample_data/card_split.csv     # parse + clean a statement
 python -m subsweep.detect my_statement.csv --excluded    # find recurring charges, show what was excluded
 python -m subsweep.findings my_statement.csv             # findings, savings and health score
+python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # AI layer (works without a key)
 python -m pytest
 ```
 
@@ -160,6 +161,46 @@ get a 403 that names `https://uri.paypal.com/services/reporting/search/read`), a
 subscriptions" page is `https://www.sandbox.paypal.com/myaccount/autopay/` (the live page is
 `https://www.paypal.com/myaccount/autopay/`; set `PAYPAL_MANAGE_URL` to override). Sandbox accounts only generate the
 first payment when you approve a subscription, so longer payment history comes from the demo statement, not PayPal.
+
+## AI layer (Anthropic)
+
+Three features use the Anthropic API (`claude-opus-5-5` by default; set `SUBSWEEP_MODEL=claude-sonnet-5-5` or
+`claude-haiku-5-5` to trade capability for cost). The key comes only from `ANTHROPIC_API_KEY`.
+
+| Feature | What it does | Where the facts come from |
+|---------|--------------|---------------------------|
+| **Finding explainer** | 2 to 3 calm, plain-English sentences per finding, with the exact amounts and dates | The findings engine (Python), as a small JSON fact sheet |
+| **Message drafter** | A short, polite cancellation / price-query / refund message for `DUPLICATE`, `PRICE_HIKE` and `POSSIBLY_FORGOTTEN`, with `[ACCOUNT NAME]`, `[ORDER / TRANSACTION DETAILS]` and `[YOUR NAME]` placeholders. **It is never sent**: SubSweep has no code to send anything, and `sent` is always `False` | The same fact sheet plus the purpose of the message |
+| **Spending Q&A** | Answers questions such as "What do I spend on streaming?" or "Which subscription went up the most this year?" | A whitelisted **pandas** analysis chosen for the question. Only its small result table goes to the model |
+
+**How "the AI never invents amounts or dates" is enforced** (not just requested in the prompt):
+
+1. **Facts first.** Every number comes from our own computation. The model only words it.
+2. **Minimal data.** Only whitelisted fields are sent: type, severity, merchant name, amounts, pre-formatted dates, cycle and
+   payment channel. No subscription or transaction IDs, no raw bank descriptions.
+3. **Redaction.** Card numbers (spaced, dashed or masked), account numbers, IBANs, phone numbers, email addresses (including
+   UPI handles) and API keys are removed from everything before any model call, and again before anything is logged.
+4. **Grounding check.** Every amount, percentage and date in the model's reply must appear in the data it was given
+   (whole-number rounding allowed, counts 1 to 3 always allowed). If anything is invented, the reply is discarded and a built-in
+   template built from the same facts is shown instead. Limit: this checks figures, not prose or month names without a day.
+5. **Guardrails.** Investment questions (stocks, funds, crypto, retirement accounts and similar), prompt-injection attempts and
+   questions unrelated to your finances are refused **before** any model call, so they cost nothing and send nothing. The same
+   advice filter runs on the model's output. If your question matches no analysis, the answer says so instead of guessing; an
+   empty result says "I can't find anything in your data".
+6. **Audit log.** Every interaction, including refusals and template fallbacks, is appended to `logs/ai_audit.jsonl`
+   (git-ignored; override with `SUBSWEEP_AI_LOG`): the redacted request, the reply, model, token usage, latency, the grounding
+   verdict and the final status.
+7. **"Show data used".** Every answer carries `data_used`, exactly what was sent to the model after redaction, plus the result
+   table for Q&A, so the interface can reveal it on demand.
+
+**It works without a key.** With no `ANTHROPIC_API_KEY` (or `SUBSWEEP_AI=off`), if the API is unreachable, or if the model declines
+or fails the grounding check, every feature falls back to a deterministic template and says so (`generated_by: "template"`).
+When the model is used, the client sets `output_config.effort` to `low`, never sends `temperature` (not accepted by this model
+family), and requests Anthropic's server-side refusal `fallbacks: "default"` option; if the API rejects that option the client
+retries once without it.
+
+Question routing is rule-based first. The model is only asked to pick an analysis when the rules cannot, and only for questions
+that look financial; its answer must be a JSON intent from a fixed whitelist with validated parameters.
 
 Known limits: biweekly plans are not recognised, a single yearly charge cannot be detected, and the merchant
 cleaner only strips a curated list of cities, so unusual place names can survive into the merchant name.

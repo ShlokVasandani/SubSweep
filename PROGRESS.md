@@ -26,7 +26,14 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   `subsweep/paypal/provider.py`; labelled `paypal_mock` / `data_source="mock"`. 44 new tests, 34 mutations all caught.
   Live approval is optional and manual. `seed.py` untouched.
 
+- **Phase 5 – AI layer (code complete, NOT yet run against the live Anthropic API)**: `subsweep/ai/` (finding
+  explainer, message drafter that never sends, spending Q&A over whitelisted pandas analyses, redaction, grounding check,
+  guardrails, JSONL audit log, `data_used` on every answer), `python -m subsweep.ai`. Works without a key via templates.
+  260 new tests with a scripted fake model; 93 mutations of the AI layer all caught.
+
 ## Next
+- Add `ANTHROPIC_API_KEY` and run the AI layer live once (`python -m subsweep.ai mock --explain --ask "..."`): the request
+  shape and error mapping are tested against a fake client, but no real API call has been made from the cloud session.
 - Run the PayPal parts live (optional now: the demo no longer depends on it) (needs your sandbox credentials; PayPal hosts are not reachable from the cloud session).
 - Phase 5 – AI layer (explainer, message drafter, Q&A, audit log, redaction). Needs `ANTHROPIC_API_KEY`.
 
@@ -52,6 +59,15 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
 - Mock fallback is all-or-nothing (never a live/demo mix) and clearly labelled; lookup errors are not masked.
 - Phase 1 touched (tiny fix): the merchant cleaner no longer strips a balanced closing parenthesis, so
   "Streamly Plus (Annual)" keeps its name; capitalisation also works after a leading "(".
+- Model: `claude-opus-5-5` by default (per Anthropic's current guidance); `SUBSWEEP_MODEL` switches to sonnet/haiku for cost.
+  Never sends `temperature`; sets `output_config.effort="low"`; requests server-side refusal `fallbacks: "default"` and
+  silently drops it once if the API rejects it.
+- Every model output is verified: amounts/percentages/dates must appear in the data sent, else a template (built from the
+  same facts) is shown. The check covers figures, not prose.
+- The model only routes a question when keyword rules fail AND the question looks financial; unrelated and investment
+  questions are refused locally with no model call.
+- Fixed in passing: a catastrophic-backtracking (ReDoS) bug in the first redaction pattern, found by the test run;
+  a key-fragment leak in the audit log ordering, found by mutation testing.
 - Weekly cycles do not allow missed weeks (a 14-day gap is not "a skipped week"); biweekly plans are unsupported.
 - A merchant is split into plans (monthly vs yearly) only when amount tiers form concurrent cycles; otherwise one
   subscription with irregular amounts or a sustained price change.
