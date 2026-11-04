@@ -1,0 +1,73 @@
+/* SubSweep design tokens. Two themes (night is the default, day is the toggle). Coral is the ONE alert colour; the
+   aurora hues are background mood only and are driven by scroll (see js/moods.js and js/theme.js). */
+@font-face { font-family: "Fraunces"; src: url("/vendor/fonts/fraunces-latin-opsz-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("/vendor/fonts/fraunces-latin-opsz-italic.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Hanken Grotesk"; src: url("/vendor/fonts/hanken-grotesk-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+
+:root {
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-ui: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* mood colours: written by theme.js as the page scrolls (defaults = midnight) */
+  --bg-a: rgb(8 12 28);  --bg-b: rgb(18 28 64);
+  --glow-1: rgb(91 108 255);  --glow-2: rgb(47 212 200);  --glow-3: rgb(160 110 255);
+  --p: 0;                       /* page scroll progress 0..1, used for parallax */
+
+  /* night theme */
+  --ink: #f5f7ff;
+  --ink-2: #d5dcf5;             /* secondary text  (>= 7:1 on glass) */
+  --ink-3: #c4cbe8;             /* tertiary text   (>= 4.5:1 even on bare aurora; verified in tests/test_frontend.py) */
+  --glass-bg: rgb(255 255 255 / 0.085);
+  --chip-bg: rgb(13 19 44 / 0.9);
+  --glass-tint: rgb(6 9 24 / 0.60);           /* keeps text readable whatever the aurora is doing behind the glass */
+  --glass-bg-strong: rgb(14 20 46 / 0.62);
+  --glass-border: rgb(255 255 255 / 0.17);
+  --glass-hi: rgb(255 255 255 / 0.34);
+  --glass-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 24px 60px -24px rgb(2 6 24 / 0.7), 0 2px 10px rgb(2 6 24 / 0.35);
+  --field-bg: rgb(7 11 28 / 0.55);
+  --alert: #ff9a86;             /* coral: the single alert accent */
+  --alert-ink: #ffd8d1;
+  --alert-bg: rgb(255 122 102 / 0.16);
+  --alert-border: rgb(255 138 118 / 0.55);
+  --good: #82e6c8;
+  --good-bg: rgb(130 230 200 / 0.14);
+  --focus: #ffffff;
+  --focus-ring: 0 0 0 3px #0b1024, 0 0 0 5px #ffffff;
+  --btn-bg: #f5f7ff;  --btn-ink: #0b1024;
+  --grain-opacity: 0.07;
+  --blob-opacity: 0.4;
+  --scrim: 0.30;                /* darkens the aurora a little so text sitting directly on it stays readable */
+
+  --radius-xl: 32px; --radius-lg: 24px; --radius-md: 16px; --radius-sm: 10px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --topbar-h: 68px;
+  --pad: clamp(16px, 4vw, 56px);
+  --maxw: 1180px;
+}
+
+:root[data-theme="day"] {
+  --ink: #0f1626;
+  --ink-2: #2a3550;
+  --ink-3: #46526f;
+  --glass-bg: rgb(255 255 255 / 0.58);
+  --chip-bg: rgb(255 255 255 / 0.92);
+  --glass-tint: rgb(255 255 255 / 0.18);
+  --glass-bg-strong: rgb(255 255 255 / 0.82);
+  --glass-border: rgb(255 255 255 / 0.85);
+  --glass-hi: rgb(255 255 255 / 1);
+  --glass-shadow: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 24px 50px -26px rgb(40 52 90 / 0.4), 0 2px 8px rgb(40 52 90 / 0.12);
+  --field-bg: rgb(255 255 255 / 0.7);
+  --alert: #b7321f;
+  --alert-ink: #7d1d10;
+  --alert-bg: rgb(224 80 58 / 0.12);
+  --alert-border: rgb(183 50 31 / 0.5);
+  --good: #0c6b51;
+  --good-bg: rgb(12 107 81 / 0.12);
+  --focus: #0f1626;
+  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px #0f1626;
+  --btn-bg: #0f1626;  --btn-ink: #ffffff;
+  --grain-opacity: 0.05;
+  --blob-opacity: 0.5;
+  --scrim: 0;
+}

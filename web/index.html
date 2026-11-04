@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SubSweep: find the subscriptions quietly draining you</title>
+  <meta name="description" content="Upload a bank or PayPal statement. SubSweep finds forgotten, duplicate and price-hiked subscriptions, explains them in plain English, and drafts messages you send yourself. It never cancels or sends anything.">
+  <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b1024'/%3E%3Cpath d='M8 20c4 4 11 4 15-1M9 12c3-4 10-4 15 0' fill='none' stroke='%23f5f7ff' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23ff8a76'/%3E%3C/svg%3E">
+  <link rel="preload" href="/vendor/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/vendor/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-logo" viewBox="0 0 32 32"><path d="M6 20c4.5 5 13 5 18-1M8 12c4-5 12-5 18 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="16" cy="16" r="2.6" fill="var(--alert)"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-4a1.5 1.5 0 0 1 3 0v6m0-2a1.5 1.5 0 0 1 3 0v3c0 4-3 7-7 7h-1c-3 0-4.500-1.500-6-4l-2-3.500a1.500 1.500 0 0 1 2.500-1.500L8 14"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.500" y="3.500" width="7" height="7" rx="2"/><rect x="13.500" y="3.500" width="7" height="7" rx="2"/><rect x="3.500" y="13.500" width="7" height="7" rx="2"/><rect x="13.500" y="13.500" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7.500"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.900 4.900l1.400 1.400m11.400 11.400 1.400 1.400M2 12h2m16 0h2M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-2.500-6.500z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-copy2" viewBox="0 0 24 24"><path d="M5 12.500 10 17.500 19 7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.500"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2.500 20h19zM12 10v4m0 3h.01"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
+<div class="aurora" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="grain"></i></div>
+
+<header class="topbar glass" id="topbar">
+  <a class="brand" href="#/" aria-label="SubSweep home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="serif">SubSweep</span></a>
+  <nav class="tabs" id="tabs" aria-label="Sections" hidden>
+    <a href="#/overview" data-route="overview"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg><span>Overview</span></a>
+    <a href="#/subscriptions" data-route="subscriptions"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span>Subscriptions</span></a>
+    <a href="#/findings" data-route="findings"><svg class="icon" aria-hidden="true"><use href="#i-flag"/></svg><span>Findings</span><b class="count" id="count-findings" hidden></b></a>
+    <a href="#/ask" data-route="ask"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span>Ask</span></a>
+  </nav>
+  <div class="tools">
+    <span class="chip" id="badge-source" hidden></span>
+    <span class="chip" id="badge-ai" hidden></span>
+    <button class="btn btn-quiet btn-sm" type="button" id="btn-new" hidden>New statement</button>
+    <button class="btn btn-quiet btn-sm theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch between night and day theme"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg><span class="label">Night</span></button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- ============================ LANDING: a scroll story ============================ -->
+  <div id="view-landing" class="view landing">
+    <section class="scene hero" data-mood="midnight" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <p class="eyebrow hero-eyebrow">Private by design · PayPal sandbox + Claude</p>
+        <h1 id="hero-title" class="display" data-split>Your money is leaving <em>quietly.</em></h1>
+        <p class="lede hero-lede">Drop a bank or PayPal statement. SubSweep finds the subscriptions you forgot, doubled up on, or that crept up in price, explains each in plain English, and drafts the message. <strong>You</strong> decide. It never cancels or sends anything.</p>
+
+        <div class="drop glass" id="drop" data-tilt>
+          <input type="file" id="file" class="vh" accept=".csv,.tsv,.txt,text/csv,text/plain" aria-describedby="drop-hint">
+          <div class="drop-body" id="drop-idle">
+            <svg class="icon big" aria-hidden="true"><use href="#i-upload"/></svg>
+            <h2 class="drop-title">Drop your statement here</h2>
+            <p id="drop-hint" class="drop-hint">A CSV export from your bank, credit card or PayPal. We detect the format for you.</p>
+            <ul class="formats" aria-label="Supported formats"><li class="chip">Bank CSV</li><li class="chip">PayPal activity</li><li class="chip">Card (debit / credit columns)</li></ul>
+            <div class="drop-actions">
+              <button class="btn btn-primary" type="button" id="btn-choose"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Choose a file</button>
+              <button class="btn" type="button" id="btn-demo"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>Try the sample data</button>
+            </div>
+          </div>
+          <div class="drop-body" id="drop-busy" hidden role="status" aria-live="polite">
+            <div class="orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+            <h2 class="drop-title" id="busy-title">Reading your statement…</h2>
+            <p class="drop-hint" id="busy-sub">Cleaning descriptions, spotting the rhythm of repeat charges.</p>
+          </div>
+          <div class="drop-error banner alert" id="drop-error" role="alert" hidden></div>
+        </div>
+
+        <p class="privacy-line"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+          <span><strong>Everything is processed on this computer</strong> and statements are never saved. Only two things can leave it, and only if you turn them on:
+          PayPal sandbox calls, and short redacted text sent to Claude for explanations (add a key to enable; otherwise built-in text is used).</span></p>
+        <a class="scroll-cue" href="#scene-unravel" aria-label="See how it works"><span>See how it works</span><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></a>
+      </div>
+    </section>
+
+    <section class="scene unravel" id="scene-unravel" data-mood="deepsea" aria-labelledby="unravel-title">
+      <div class="pin">
+        <div class="unravel-head">
+          <p class="eyebrow">How it works</p>
+          <h2 id="unravel-title" class="cap-title"><span class="cap on" data-cap="0">Your statement is <em>noise.</em></span><span class="cap" data-cap="1">We clean every line.</span><span class="cap" data-cap="2">…then find the <em>rhythm.</em></span><span class="cap" data-cap="3">And flag what looks <em>wrong.</em></span></h2>
+        </div>
+        <div class="stage" id="stage" aria-hidden="true"></div>
+        <p class="vh">An animation shows messy bank descriptions such as "NETFLIX.COM LOS GATOS CA REF 884732" being cleaned to "Netflix", lined up into monthly rows, and then a Netflix price rise from 15.49 to 17.99 dollars and a duplicate Streamly plan being flagged.</p>
+      </div>
+    </section>
+
+    <section class="scene findings-scene" id="scene-findings" data-mood="ember" aria-labelledby="findings-title">
+      <div class="pin">
+        <div class="findings-head"><p class="eyebrow">What it finds</p><h2 id="findings-title" class="cap-title">Five ways money <em>slips away.</em></h2></div>
+        <div class="deck" id="deck"></div>
+      </div>
+    </section>
+
+    <section class="scene decide" id="scene-decide" data-mood="dawn" aria-labelledby="decide-title">
+      <div class="decide-inner">
+        <p class="eyebrow reveal">The rules we hold ourselves to</p>
+        <h2 id="decide-title" class="reveal" style="--i:1">You always make the <em>final call.</em></h2>
+        <div class="trio">
+          <article class="glass tile reveal" style="--i:2"><svg class="icon big" aria-hidden="true"><use href="#i-hand"/></svg><h3>Nothing happens without you</h3><p>No automatic cancelling, no emails sent for you. Drafts are text for <em>you</em> to review and send, and PayPal changes happen on PayPal.</p></article>
+          <article class="glass tile reveal" style="--i:3"><svg class="icon big" aria-hidden="true"><use href="#i-shield"/></svg><h3>The AI can't invent numbers</h3><p>Every amount and date is computed first. The model only words it, and anything that doesn't match your data is thrown away.</p></article>
+          <article class="glass tile reveal" style="--i:4"><svg class="icon big" aria-hidden="true"><use href="#i-lock"/></svg><h3>Local and honest</h3><p>Card and account numbers are redacted before anything is sent. Guesses are labelled as guesses, and you can mark "still using".</p></article>
+        </div>
+        <div class="cta reveal" style="--i:5"><a class="btn btn-primary" href="#drop" id="cta-top">Analyse a statement</a></div>
+        <footer class="foot">SubSweep · MIT licensed · built for the PayPal AI Hackathon, November 2026</footer>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================ APP SCREENS ============================ -->
+  <section id="view-overview" class="view app" hidden aria-labelledby="ov-title"></section>
+  <section id="view-subscriptions" class="view app" hidden aria-labelledby="subs-title"></section>
+  <section id="view-findings" class="view app" hidden aria-labelledby="find-title"></section>
+  <section id="view-ask" class="view app" hidden aria-labelledby="ask-title"></section>
+</main>
+
+<nav class="tabbar glass" id="tabbar" aria-label="Sections" hidden>
+  <a href="#/overview" data-route="overview"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg><span>Overview</span></a>
+  <a href="#/subscriptions" data-route="subscriptions"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span>Subs</span></a>
+  <a href="#/findings" data-route="findings"><svg class="icon" aria-hidden="true"><use href="#i-flag"/></svg><span>Findings</span></a>
+  <a href="#/ask" data-route="ask"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span>Ask</span></a>
+</nav>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="mapper" aria-labelledby="mapper-title">
+  <form class="glass mapper" method="dialog" id="mapper-form">
+    <h2 id="mapper-title">Help us read this file</h2>
+    <p class="mapper-msg" id="mapper-msg">We couldn't tell which columns hold the date, description and amount. Pick them below and we'll take it from there.</p>
+    <div class="mapper-grid" id="mapper-grid"></div>
+    <label class="check"><input type="checkbox" id="map-invert"> Purchases show as positive numbers (flip the sign)</label>
+    <div class="mapper-actions"><button class="btn btn-quiet" type="button" id="mapper-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="mapper-go">Read the file</button></div>
+  </form>
+</dialog>
+
+<script src="/vendor/chart.umd.js"></script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
