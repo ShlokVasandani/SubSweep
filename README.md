@@ -12,6 +12,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m subsweep.ingest sample_data/card_split.csv     # parse + clean a statement
 python -m subsweep.detect my_statement.csv --excluded    # find recurring charges, show what was excluded
+python -m subsweep.findings my_statement.csv             # findings, savings and health score
 python -m pytest
 ```
 
@@ -37,6 +38,36 @@ Output (`detect_recurring(transactions)`): a `subscriptions` table with merchant
 amount, first and last charge date, next expected date, active flag, confidence and reason, price changes,
 payment channel, category hint and the transaction IDs behind each row; plus an `excluded` table with the
 rule and reason for everything that was dropped.
+
+## Findings and the health score
+
+`generate_findings(subscriptions, transactions)` turns detected subscriptions into findings. Each has a
+severity, a plain-English reason containing the exact amounts and dates, and an `evidence` dict with the raw
+figures (this is what the AI layer later receives; it never invents numbers). All thresholds are under
+`findings:` in `config/rules.yaml`. Only **active** subscriptions (a charge within 1.5 cycles of the statement
+end) produce findings.
+
+| Finding | Fires when | Severity | Savings counted |
+|---------|-----------|----------|-----------------|
+| `DUPLICATE` | Two or more active streams for the same service and currency: monthly plus annual plans, PayPal plus direct billing, two accounts, or the same charge twice each month | high | Every stream except the one with the highest yearly cost (we assume you keep one) |
+| `PRICE_HIKE` | A price increase of 5% or more that held for 2+ charges (latest increase shown, with old price, new price and annual impact) | high at +25% or more, else medium | The annual impact of the increase |
+| `POSSIBLY_FORGOTTEN` | A visible points score reaches 4: discretionary category (+2), billed for 6+ months (+2), identical amount every time (+1), 3+ services in the same discretionary category (+1) | medium at 5+, else low | The full yearly cost. **This is a guess**; the finding says so, lists every heuristic, and "still using" dismisses it |
+| `ZOMBIE` | You supply a usage signal: charges continue 45+ days after a last-used date, or after a trial end date | high | The full yearly cost |
+| `ANNUAL_RENEWAL_SOON` | A yearly charge is due within 30 days of today | high within 7 days, else medium | None (informational) |
+
+**Savings** are summed per currency over open findings and count each subscription once: a subscription flagged
+for cancellation counts its full yearly cost, one flagged only for a price hike counts the hike's annual impact,
+and the stream a duplicate finding tells you to keep is not also counted as forgotten. Dismissed findings stay
+listed (as dismissed) but leave the totals and the health score.
+
+**Subscription health score** (0-100, higher is better): `100 - A - B - C`
+
+- **A** = 50 x (potential yearly savings / yearly subscription spend): how much of your spend is at risk.
+- **B** = open findings, 10 points per high, 5 per medium, 2 per low, capped at 30.
+- **C** = 2 points for each active subscription beyond 8, capped at 10 (sprawl).
+
+80 and above reads "Healthy", 55-79 "Worth a look", below 55 "Needs attention". The formula, with your numbers
+filled in, is returned with every score. Mixed-currency statements are scored on the main currency.
 
 Known limits: biweekly plans are not recognised, a single yearly charge cannot be detected, and the merchant
 cleaner only strips a curated list of cities, so unusual place names can survive into the merchant name.
