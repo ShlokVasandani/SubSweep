@@ -211,6 +211,13 @@ _ACRONYMS = {
 }
 
 
+# Brands whose proper capitalisation is not plain Title Case (applied when the statement shouts in ALL CAPS).
+_BRANDS = {b.lower(): b for b in (
+    "YouTube", "iCloud", "iTunes", "PayPal", "FitPass", "CloudBox", "NordVPN", "ExpressVPN", "ChatGPT", "OpenAI", "GitHub", "LinkedIn",
+    "TikTok", "DoorDash", "eBay", "WhatsApp", "OneDrive", "PlayStation", "DAZN", "CrossFit", "OnlyFans", "MasterClass", "LastPass",
+    "1Password", "Dropbox", "Spotify", "Netflix", "AdGuard", "ProtonMail", "NYTimes", "SoundCloud", "SiriusXM", "WordPress", "Squarespace")}
+
+
 def _smart_case(s: str) -> str:
     """Title-case ALL-CAPS / all-lower text; leave mixed case (YouTube, iCloud) alone."""
     if not (s.isupper() or s.islower()):
@@ -219,7 +226,7 @@ def _smart_case(s: str) -> str:
         i = next((k for k, ch in enumerate(w) if ch.isalpha()), None)
         return w if i is None else w[:i] + w[i].upper() + w[i + 1:].lower()
 
-    return " ".join(w.upper() if w.strip("()").lower() in _ACRONYMS else cap(w) for w in s.split())
+    return " ".join(w.upper() if w.strip("()").lower() in _ACRONYMS else _BRANDS.get(w.strip("()").lower(), cap(w)) for w in s.split())
 
 
 def is_paypal_description(raw: str) -> bool:

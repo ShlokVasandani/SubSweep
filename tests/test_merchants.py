@@ -67,3 +67,15 @@ def test_paypal_prefix_detection():
 ])
 def test_balanced_parentheses_are_kept_but_stray_punctuation_is_trimmed(raw, clean):
     assert clean_merchant(raw) == clean
+
+
+@pytest.mark.parametrize("raw,clean", [
+    ("PAYPAL *FITPASS GYM 4029357733", "FitPass Gym"), ("PAYPAL *CLOUDBOX 4029357733", "CloudBox"), ("YOUTUBE PREMIUM", "YouTube Premium"),
+    ("APPLE ICLOUD STORAGE", "Apple iCloud Storage"), ("NORDVPN.COM", "NordVPN"), ("GITHUB INC", "GitHub"),
+])
+def test_known_brands_keep_their_proper_capitalisation(raw, clean):
+    assert clean_merchant(raw) == clean
+
+
+def test_mixed_case_input_is_still_left_alone_and_unknown_names_are_title_cased():
+    assert clean_merchant("Fitpass Gym") == "Fitpass Gym" and clean_merchant("ACME TOOLS") == "Acme Tools"
