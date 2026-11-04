@@ -188,11 +188,21 @@ def strip_company_suffix(s: str) -> str:
     return s
 
 
+def _strip_edges(s: str) -> str:
+    """Trim punctuation at both ends, but keep a closing ')' that has a matching '(' ("Plus (Annual)")."""
+    s = re.sub(r"^[\W_]+", "", s)
+    while s and not s[-1].isalnum():
+        if s[-1] == ")" and s.count("(") >= s.count(")"):
+            break
+        s = s[:-1]
+    return s.strip()
+
+
 def _tidy(s: str) -> str:
     s = re.sub(r"[\s_]+", " ", s)
     s = re.sub(r"\s*[*/|,;:]+\s*", " ", s)
     s = re.sub(r"\s-\s|\s-$|^-\s", " ", s)
-    return _PUNCT_EDGE.sub("", s).strip()
+    return _strip_edges(s)
 
 
 _ACRONYMS = {
@@ -205,7 +215,11 @@ def _smart_case(s: str) -> str:
     """Title-case ALL-CAPS / all-lower text; leave mixed case (YouTube, iCloud) alone."""
     if not (s.isupper() or s.islower()):
         return s
-    return " ".join(w.upper() if w.lower() in _ACRONYMS else w.capitalize() for w in s.split())
+    def cap(w: str) -> str:      # capitalise the first letter, even after a leading "("
+        i = next((k for k, ch in enumerate(w) if ch.isalpha()), None)
+        return w if i is None else w[:i] + w[i].upper() + w[i + 1:].lower()
+
+    return " ".join(w.upper() if w.strip("()").lower() in _ACRONYMS else cap(w) for w in s.split())
 
 
 def is_paypal_description(raw: str) -> bool:

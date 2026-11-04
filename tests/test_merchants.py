@@ -57,3 +57,13 @@ def test_paypal_prefix_detection():
     assert is_paypal_description("PAYPAL *NETFLIX")
     assert is_paypal_description("PP*SPOTIFY")
     assert not is_paypal_description("NETFLIX.COM")
+
+
+@pytest.mark.parametrize("raw,clean", [
+    ("Streamly Plus (Annual)", "Streamly Plus (Annual)"),     # balanced parentheses survive
+    ("NETFLIX (PREMIUM)", "Netflix (Premium)"),
+    ("Spotify )", "Spotify"),                                 # stray closing bracket is still trimmed
+    ("- Hulu -", "Hulu"),                                     # ordinary edge punctuation is still trimmed
+])
+def test_balanced_parentheses_are_kept_but_stray_punctuation_is_trimmed(raw, clean):
+    assert clean_merchant(raw) == clean
