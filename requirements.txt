@@ -1,6 +1,6 @@
 # Runtime dependencies (what `python -m subsweep` and the hosted build need). For the tests: pip install -r requirements-dev.txt
 pandas>=2.2
-numpy>=1.26
+numpy>=2.5.4
 rapidfuzz>=3.6
 fastapi>=0.110
 uvicorn>=0.29
