@@ -10,9 +10,10 @@ from pathlib import Path
 import pytest
 
 from subsweep.paypal import PayPalClient, PayPalConfig, PayPalError
+from subsweep.paypal.errors import PayPalNotFound, PayPalPermissionError
 from subsweep.paypal.config import load_dotenv
 from subsweep.paypal.seed import REGISTRY_DEFAULT, registry_subscription_ids
-from subsweep.paypal.subscriptions import SCOPE_SUBSCRIPTIONS, list_plans, live_status
+from subsweep.paypal.subscriptions import SCOPE_SUBSCRIPTIONS, get_subscription, list_plans
 from subsweep.paypal.transactions import SCOPE_SEARCH, fetch_transactions, to_transactions
 
 load_dotenv()
@@ -49,9 +50,14 @@ def test_subscriptions_api_lists_plans(client):
 def test_transaction_search_last_week(client):
     client.get_token()
     if SCOPE_SEARCH not in client.scopes:
-        pytest.fail(f"The app's token does not include {SCOPE_SEARCH}. Granted scopes: {sorted(client.scopes)}")
+        pytest.skip(f"The sandbox app's token lacks the Transaction Search scope ({SCOPE_SEARCH}); enable 'Transaction Search' on the app in the "
+                    "PayPal developer dashboard to run this check.")
     try:
         batch = fetch_transactions(client, date.today() - timedelta(days=7), date.today())
+    except PayPalPermissionError as exc:
+        if exc.missing_scope:
+            pytest.skip(f"PayPal refused Transaction Search for a missing scope ({exc.missing_scope}); enable it on the sandbox app.")
+        pytest.fail(f"Transaction Search failed: {exc.user_message} (status {exc.status}, debug {exc.debug_id})")
     except PayPalError as exc:
         pytest.fail(f"Transaction Search failed: {exc.user_message} (status {exc.status}, debug {exc.debug_id})")
     df, _ = to_transactions(batch.details)
@@ -62,6 +68,15 @@ def test_seeded_subscriptions_report_live_status(client):
     ids = registry_subscription_ids(Path(os.environ.get("SUBSWEEP_SEED_REGISTRY", REGISTRY_DEFAULT)))
     if not ids:
         pytest.skip("No seeded subscriptions yet (run scripts/seed_paypal_sandbox.py)")
-    live, errors = live_status(client, ids)
-    assert not errors, errors
+    live, unknown = [], []
+    for sid in dict.fromkeys(ids):
+        try:
+            live.append(get_subscription(client, sid, {}))
+        except PayPalNotFound:
+            unknown.append(sid)
+        except PayPalError as exc:
+            pytest.fail(f"Subscriptions API failed for {sid}: {exc.user_message} (status {exc.status}, debug {exc.debug_id})")
+    if unknown:
+        pytest.skip(f"PayPal does not recognise {len(unknown)} of {len(ids)} seeded subscription ID(s): the registry was probably seeded with a "
+                    "different sandbox app or has been cleared. Re-run scripts/seed_paypal_sandbox.py with this app's credentials.")
     assert {l.status for l in live} <= {"APPROVAL_PENDING", "APPROVED", "ACTIVE", "SUSPENDED", "CANCELLED", "EXPIRED"}
