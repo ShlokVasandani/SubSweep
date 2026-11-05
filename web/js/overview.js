@@ -50,7 +50,7 @@ function paypalPanel(a) {
   const badge = p.mode === "mock" ? el("span", { class: "chip demo-badge", title: p.notice || "" }, "Demo data") : p.mode === "live" ? el("span", { class: "chip good demo-badge" }, "Live sandbox") : null;
   panel.append(el("h3", { id: "pp-title" }, "PayPal status", badge),
     el("p", { class: "sub" }, "Live status for the subscriptions billed through PayPal. SubSweep only reads this; to change anything you go to PayPal yourself."));
-  if (p.mode === "off") { panel.append(el("div", { class: "banner" }, icon("shield"), el("span", {}, p.notice || "PayPal isn't connected. Set PAYPAL_MODE=mock for demo data, or add sandbox credentials."))); return panel; }
+  if (p.mode === "off") { panel.append(el("div", { class: "banner" }, icon("shield"), el("span", {}, p.notice || (document.documentElement.dataset.hosted ? "PayPal status isn't available for your own statement on this hosted build. Run SubSweep locally with PayPal sandbox credentials (see the README) to add it." : "PayPal isn't connected. Set PAYPAL_MODE=mock for demo data, or add sandbox credentials.")))); return panel; }
   if (p.mode === "mock") panel.append(el("div", { class: "banner" }, icon("sparkle"), el("span", {}, p.notice || "Showing bundled demo data. Nothing here comes from a live PayPal account.")));
   const mismatch = new Set(a.findings.filter((f) => f.status === "open" && f.type === "PAYPAL_MISMATCH").flatMap((f) => f.subscription_ids));
   const list = el("div", { class: "pp-list", role: "list" });
@@ -150,7 +150,7 @@ export function renderOverview(root, state, ctx) {
 
   // ---- privacy: forget
   root.append(el("section", { class: "section reveal", style: { textAlign: "center" } },
-    el("p", { class: "sub", style: { margin: "0 auto 14px" } }, "Your statement lives only in this app's memory. Remove it whenever you like."),
+    el("p", { class: "sub", style: { margin: "0 auto 14px" } }, (document.documentElement.dataset.hosted ? "Your statement lives only in this browser tab. Remove it whenever you like." : "Your statement lives only in this app's memory. Remove it whenever you like.")),
     el("button", { class: "btn", type: "button", on: { click: async () => { await api.forget().catch(() => {}); location.reload(); } } }, "Remove this statement from memory")));
   watchMoods(root);
   observeReveals(root);

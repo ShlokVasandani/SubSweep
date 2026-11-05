@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import csv
+import hashlib
 import json
 import secrets
 import threading
@@ -40,8 +41,12 @@ ALLOWED_EXT = {".csv", ".txt", ".tsv"}
 MAX_SESSIONS = 12
 MAX_AI_CALLS_PER_ANALYSIS = 300
 COOKIE = "subsweep_session"
-HOSTED_MAX_BODY = 64 * 1024              # the hosted demo takes no uploads: the only request bodies are tiny forms and JSON
-HOSTED_MAX_AI_CALLS = 500                # per server instance; the hosted demo uses built-in text unless the operator turns the model on
+HOSTED_MAX_UPLOAD_BYTES = 4 * 1024 * 1024    # a serverless host caps a request at about 4.5 MB, and a statement is sent with every action
+HOSTED_SAMPLE_ONLY_BODY = 64 * 1024            # when uploads are switched off the only request bodies are tiny forms and JSON
+HOSTED_MAX_AI_CALLS = 500                      # per server instance; the hosted build uses built-in text unless the operator turns the model on
+HOSTED_CACHE_SIZE = 2                          # analyses kept warm per server instance; the browser can always re-send its statement
+STATELESS_HEADER = b"x-subsweep-stateless"
+METHOD_HEADER = b"x-subsweep-method"
 HOSTED_MESSAGE = ("Uploads are switched off on this hosted demo, so nothing of yours is sent anywhere. Try the sample statement, "
                   "or run SubSweep on your own computer to analyse your own statement: it never leaves your machine.")
 CSP = ("default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; "
@@ -117,12 +122,13 @@ class Dismiss(BaseModel):
     reason: Literal["dismissed", "still_using"] = "dismissed"
 
 
-def _check_upload(name: str, data: bytes) -> None:
+def _check_upload(name: str, data: bytes, limit: int | None = None) -> None:
+    limit = MAX_UPLOAD_BYTES if limit is None else limit          # read at call time, not definition time
     ext = Path(name or "").suffix.lower()
     if ext not in ALLOWED_EXT:
         raise ApiError(415, "wrong_file_type", "That doesn't look like a statement export. Please choose a .csv file (a .txt or .tsv export also works).")
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise ApiError(413, "too_large", f"That file is over {MAX_UPLOAD_BYTES // (1024 * 1024)} MB, which is more than a statement should need. Try exporting a shorter date range.")
+    if len(data) > limit:
+        raise ApiError(413, "too_large", f"That file is over {limit // (1024 * 1024)} MB, which is more than a statement should need. Try exporting a shorter date range.")
     if not data.strip():
         raise ApiError(400, "empty_file", "That file looks empty. Please export your statement again and choose the CSV option.")
     if b"\x00" in data[:4096] or data.startswith(_BINARY_MAGIC):
@@ -135,6 +141,126 @@ def build_demo_analysis() -> Analysis:
     source = {"kind": "demo", "filename": "sample statement", "format": statement.format, "rows": int(len(statement.transactions)),
               "warnings": statement.warnings[:20], "date_order": statement.date_order, "dropped": statement.dropped}
     return build_analysis("demo", statement, source, {}, demo=True)
+
+
+def parse_mapping(raw: str | None) -> dict | None:
+    """The `mapping` form field is JSON; anything but an object is a friendly 400."""
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            raise ValueError("mapping must be an object")
+    except (ValueError, TypeError):
+        raise ApiError(400, "bad_mapping", "The column choices couldn't be read. Please pick them again.") from None
+    return parsed
+
+
+def analysis_from_text(text: str, source: dict, *, demo: bool, mapping: dict | None, invert_sign: bool, currency: str, use_paypal: bool,
+                       dismissals: dict[str, str], analysis_id: str) -> Analysis:
+    """Statement text -> Analysis. Shared by the normal upload route and the hosted build, so both behave identically."""
+    warnings: list[str] = []
+    try:
+        col_map = None
+        if mapping is not None:
+            try:
+                col_map = ColumnMapping.from_dict(mapping)
+            except (ValueError, TypeError):
+                raise ApiError(400, "bad_mapping", "The column choices couldn't be read. Please pick them again.") from None
+            col_map.invert_sign = col_map.invert_sign or invert_sign
+        elif invert_sign:
+            det = detect_format(read_rows(text, sniff_delimiter(text)), sniff_delimiter(text))
+            if det.ok:
+                col_map = det.mapping
+                col_map.invert_sign = True
+        statement = load_statement(text, col_map, default_currency=currency.upper(), source_label=source["kind"] if demo else None)
+    except FormatDetectionError as exc:
+        raise ApiError(422, "needs_mapping", str(exc), {"headers": exc.headers, "suggestions": exc.suggestions}) from None
+    except StatementTooLargeError as exc:
+        raise ApiError(413, "too_large", str(exc)) from None
+    except (csv.Error, UnicodeError):
+        raise ApiError(422, "unreadable_file", "We couldn't read that file as a CSV (a cell is far too long, or the text encoding is broken). "
+                       "Please export the statement again as a plain CSV.") from None
+    if len(statement.transactions) == 0:
+        raise ApiError(422, "no_transactions", "We couldn't find any transactions in that file. Check it's a statement export with dates and amounts.",
+                       {"warnings": statement.warnings})
+    warnings += statement.warnings
+    source.update({"format": statement.format, "rows": int(len(statement.transactions)), "warnings": warnings[:20],
+                   "date_order": statement.date_order, "dropped": statement.dropped})
+    return build_analysis(analysis_id, statement, source, dismissals, demo=demo, use_paypal=use_paypal)
+
+
+def parse_options(raw: object) -> dict:
+    """The browser's description of the statement it is re-sending. Validated, because it arrives on a public endpoint."""
+    try:
+        o = json.loads(raw) if isinstance(raw, str) and raw else {}
+    except ValueError:
+        o = None
+    bad = ApiError(400, "bad_request", "That request didn't look right. Please reload the page and try again.")
+    if not isinstance(o, dict):
+        raise bad
+    mapping = o.get("mapping")
+    cur = o.get("default_currency", "USD")
+    if (mapping is not None and not isinstance(mapping, dict)) or not isinstance(cur, str) or len(cur) != 3 or not cur.isalpha():
+        raise bad
+    return {"demo": o.get("demo") is True, "mapping": mapping, "invert_sign": o.get("invert_sign") is True,
+            "default_currency": cur.upper(), "filename": Path(str(o.get("filename") or "statement.csv")).name[:120]}
+
+
+def cache_key(data: bytes, options: dict) -> str:
+    meta = {k: options.get(k) for k in ("mapping", "invert_sign", "default_currency", "filename")}
+    return hashlib.sha256(data + b"\0" + json.dumps(meta, sort_keys=True, default=str).encode()).hexdigest()
+
+
+class StatelessMiddleware:
+    """Hosted build only. A serverless host may answer every request from a different instance, so nothing about a visitor can live on the
+    server. The browser keeps the statement and re-sends it with each action as a multipart POST (`statement`, `options`, and the original JSON
+    body as `json`) carrying X-SubSweep-Stateless and X-SubSweep-Method. This turns that back into the ordinary request the routes expect and
+    hands them the statement through `request.state.stateless`, so the routes themselves do not change. The custom headers also mean a
+    cross-site page cannot make this request without a CORS preflight."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if (scope["type"] != "http" or not any(k == STATELESS_HEADER for k, _ in scope["headers"])
+                or not path.startswith("/api/") or path.startswith("/api/analyze")):
+            return await self.app(scope, receive, send)
+        request = Request(scope, receive)
+        try:
+            method = (request.headers.get(METHOD_HEADER.decode()) or "POST").upper()
+            if method not in ("GET", "POST", "DELETE"):
+                raise ApiError(400, "bad_request", "That request didn't look right. Please reload the page and try again.")
+            form = await request.form()
+            options = parse_options(form.get("options"))
+            statement = form.get("statement")
+            data = await statement.read() if hasattr(statement, "read") else None
+            payload = form.get("json")
+            payload = payload if isinstance(payload, str) else ""
+        except ApiError as exc:
+            return await JSONResponse({"error": {"code": exc.code, "message": exc.message, "details": exc.details}}, status_code=exc.status)(scope, receive, send)
+        except Exception:
+            return await JSONResponse({"error": {"code": "bad_request", "message": "That request didn't look right. Please reload the page and try again.", "details": {}}},
+                                      status_code=400)(scope, receive, send)
+        state = dict(scope.get("state") or {})
+        if options["demo"] or data:
+            state["stateless"] = {"demo": options["demo"], "data": data, "options": options}
+        body = payload.encode()
+        skip = {b"content-type", b"content-length", STATELESS_HEADER, METHOD_HEADER}
+        headers = [(k, v) for k, v in scope["headers"] if k not in skip] + [(b"content-length", str(len(body)).encode())]
+        if body:
+            headers.append((b"content-type", b"application/json"))
+        sent = False
+
+        async def new_receive():
+            nonlocal sent
+            if not sent:
+                sent = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return await receive()
+
+        await self.app({**scope, "method": method, "headers": headers, "state": state}, new_receive, send)
 
 
 class Sessions:
@@ -159,17 +285,23 @@ class Sessions:
 
 
 def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None, audit_path: str | Path | None = None, *,
-               hosted_demo: bool = False) -> FastAPI:
-    """`hosted_demo=True` is the build for a serverless host (see app.py and the README): sample data only, no uploads, no disk, no shared
-    memory. Every request can be served by a different instance, so the sample analysis is rebuilt on demand and each visitor's decisions
-    live in their own cookie."""
+               hosted: bool = False, uploads: bool = True) -> FastAPI:
+    """`hosted=True` is the build for a serverless host (see app.py and the README). Every request may be served by a different instance,
+    so nothing about a visitor lives on the server: the browser keeps the statement and re-sends it with each action (see
+    StatelessMiddleware), the server rebuilds the analysis in memory, keeps a couple warm, and writes nothing to disk. Each visitor's dismiss
+    decisions live in their own cookie. `uploads=False` makes it a sample-data-only demo."""
     app = FastAPI(title="SubSweep", version=__version__, docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json")
-    store = Store(":memory:" if hosted_demo else db_path)
+    store = Store(":memory:" if hosted else db_path)
     assistant = ai if ai is not None else AIAssistant(build_default_llm(), AuditLog(audit_path))
     sessions = Sessions()
     app.state.store, app.state.ai, app.state.sessions = store, assistant, sessions
-    if hosted_demo:
-        app.add_middleware(BodyLimitMiddleware, max_bytes=HOSTED_MAX_BODY, code="hosted_demo", message=HOSTED_MESSAGE)
+    if hosted:
+        app.add_middleware(StatelessMiddleware)
+        if uploads:
+            app.add_middleware(BodyLimitMiddleware, max_bytes=HOSTED_MAX_UPLOAD_BYTES + 256 * 1024,
+                               message=f"That's more than a statement should need (limit {HOSTED_MAX_UPLOAD_BYTES // (1024 * 1024)} MB). Try exporting a shorter date range.")
+        else:
+            app.add_middleware(BodyLimitMiddleware, max_bytes=HOSTED_SAMPLE_ONLY_BODY, code="hosted_demo", message=HOSTED_MESSAGE)
     else:
         app.add_middleware(BodyLimitMiddleware, max_bytes=MAX_UPLOAD_BYTES + 256 * 1024)      # the file plus multipart overhead and the small form fields
 
@@ -201,30 +333,54 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
         return resp
 
     hosted_base: dict[str, Analysis] = {}
+    upload_cache: OrderedDict[str, Analysis] = OrderedDict()
     hosted_lock = threading.Lock()
     hosted_ai_calls = [0]
 
     def decisions(request: Request):
-        return CookieDecisions(request) if hosted_demo else store
+        return CookieDecisions(request) if hosted else store
 
-    def hosted_view(d) -> Analysis:
-        """The sample analysis as this visitor sees it: a shallow copy, so one visitor's decisions never change another's view."""
+    def build_upload(data: bytes, o: dict, key: str) -> Analysis:
+        _check_upload(o["filename"], data, HOSTED_MAX_UPLOAD_BYTES)
+        # use_paypal=False: a visitor's own statement is never merged with the bundled (fictional) PayPal demo data
+        return analysis_from_text(decode_bytes(data), {"kind": "upload", "filename": o["filename"]}, demo=False, mapping=o["mapping"],
+                                  invert_sign=o["invert_sign"], currency=o["default_currency"], use_paypal=False, dismissals={}, analysis_id=key[:12])
+
+    def base_for(ss: dict) -> Analysis:
+        """The analysis for the statement the browser sent (or the sample). A warm per-instance cache; a cold instance simply rebuilds it."""
+        if ss["demo"]:
+            with hosted_lock:
+                if "demo" not in hosted_base:
+                    hosted_base["demo"] = build_demo_analysis()
+                return hosted_base["demo"]
+        key = cache_key(ss["data"], ss["options"])
         with hosted_lock:
-            if "a" not in hosted_base:
-                hosted_base["a"] = build_demo_analysis()
-            base = hosted_base["a"]
-        a = copy.copy(base)
+            if key in upload_cache:
+                upload_cache.move_to_end(key)
+                return upload_cache[key]
+        built = build_upload(ss["data"], ss["options"], key)
+        with hosted_lock:
+            upload_cache[key] = built
+            upload_cache.move_to_end(key)
+            while len(upload_cache) > HOSTED_CACHE_SIZE:
+                upload_cache.popitem(last=False)
+        return built
+
+    def view_for(ss: dict, d) -> Analysis:
+        """The analysis as this visitor sees it: a shallow copy, so one visitor's decisions never change another's view."""
+        a = copy.copy(base_for(ss))
         a.refresh(d.dismissals())
         return a
 
-    if hosted_demo:
-        app.state.hosted_view = hosted_view          # exposed so a test can prove that two visitors' views are independent objects
+    if hosted:
+        app.state.hosted_view = view_for              # exposed so a test can prove that two visitors' views are independent objects
 
     def current(request: Request) -> tuple[str, Analysis]:
-        if hosted_demo:
-            if request.cookies.get(COOKIE) != "demo":
-                raise ApiError(404, "no_analysis", "There's no statement loaded yet. Try the sample data.")
-            return "demo", hosted_view(decisions(request))
+        if hosted:
+            ss = getattr(request.state, "stateless", None)
+            if ss is None:
+                raise ApiError(404, "no_analysis", "There's no statement loaded yet. Upload one, or try the sample data.")
+            return "stateless", view_for(ss, decisions(request))
         sid = request.cookies.get(COOKIE)
         a = sessions.get(sid)
         if a is None:
@@ -236,7 +392,7 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
         return {"summary": view["summary"], "findings": view["findings"]}
 
     def ai_gate(a: Analysis) -> None:
-        if hosted_demo:
+        if hosted:
             hosted_ai_calls[0] += 1
             if hosted_ai_calls[0] > HOSTED_MAX_AI_CALLS:
                 raise ApiError(429, "ai_limit", "This hosted demo has answered a lot of AI requests; please try again later.")
@@ -250,7 +406,8 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     def health():
         llm = assistant.llm
         return {"ok": True, "version": __version__, "ai": {"mode": assistant.mode, "model": getattr(llm, "model", None)},
-                "paypal_mode": current_mode(), "limits": {"max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024)}, "hosted_demo": hosted_demo}
+                "paypal_mode": current_mode(), "limits": {"max_upload_mb": (HOSTED_MAX_UPLOAD_BYTES if hosted else MAX_UPLOAD_BYTES) // (1024 * 1024)},
+                "hosted": hosted, "uploads": uploads or not hosted}
 
     # ------------------------------------------------------------------ analysis
     @app.post("/api/analyze")
@@ -265,14 +422,19 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     ):
         if len(default_currency) != 3 or not default_currency.isalpha():
             raise ApiError(400, "bad_currency", "Currency should be a three-letter code such as USD, EUR or INR.")
-        if hosted_demo:
-            if not demo:
-                raise ApiError(403, "hosted_demo", HOSTED_MESSAGE)
+        if hosted:
             d = decisions(request)
-            resp = JSONResponse(hosted_view(d).overview_json(d.dismissals()))
-            resp.set_cookie(COOKIE, "demo", httponly=True, samesite="strict", secure=request.url.scheme == "https", path="/", max_age=6 * 3600)
-            return resp
-        warnings: list[str] = []
+            if demo:
+                return JSONResponse(view_for({"demo": True, "data": None, "options": {}}, d).overview_json(d.dismissals()))
+            if not uploads:
+                raise ApiError(403, "hosted_demo", HOSTED_MESSAGE)
+            if file is None or not file.filename:
+                raise ApiError(400, "no_file", "Choose a statement file first, or try the sample data.")
+            data = await file.read(HOSTED_MAX_UPLOAD_BYTES + 1)
+            _check_upload(file.filename, data, HOSTED_MAX_UPLOAD_BYTES)
+            options = {"demo": False, "mapping": parse_mapping(mapping), "invert_sign": invert_sign, "default_currency": default_currency.upper(),
+                       "filename": Path(file.filename).name[:120]}
+            return JSONResponse(view_for({"demo": False, "data": data, "options": options}, d).overview_json(d.dismissals()))
         if demo:
             text, name = demo_statement_csv(), "sample statement"
             source = {"kind": "demo", "filename": name}
@@ -283,38 +445,9 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
             _check_upload(file.filename, data)
             text, name = decode_bytes(data), file.filename
             source = {"kind": "upload", "filename": Path(name).name[:120]}
-        try:
-            col_map = None
-            if mapping:
-                try:
-                    parsed = json.loads(mapping)
-                    if not isinstance(parsed, dict):
-                        raise ValueError("mapping must be an object")
-                    col_map = ColumnMapping.from_dict(parsed)
-                except (ValueError, TypeError):
-                    raise ApiError(400, "bad_mapping", "The column choices couldn't be read. Please pick them again.") from None
-                col_map.invert_sign = col_map.invert_sign or invert_sign
-            elif invert_sign:
-                det = detect_format(read_rows(text, sniff_delimiter(text)), sniff_delimiter(text))
-                if det.ok:
-                    col_map = det.mapping
-                    col_map.invert_sign = True
-            statement = load_statement(text, col_map, default_currency=default_currency.upper(), source_label=source["kind"] if demo else None)
-        except FormatDetectionError as exc:
-            raise ApiError(422, "needs_mapping", str(exc), {"headers": exc.headers, "suggestions": exc.suggestions}) from None
-        except StatementTooLargeError as exc:
-            raise ApiError(413, "too_large", str(exc)) from None
-        except (csv.Error, UnicodeError):
-            raise ApiError(422, "unreadable_file", "We couldn't read that file as a CSV (a cell is far too long, or the text encoding is broken). "
-                           "Please export the statement again as a plain CSV.") from None
-        if len(statement.transactions) == 0:
-            raise ApiError(422, "no_transactions", "We couldn't find any transactions in that file. Check it's a statement export with dates and amounts.",
-                           {"warnings": statement.warnings})
-        warnings += statement.warnings
-        source.update({"format": statement.format, "rows": int(len(statement.transactions)), "warnings": warnings[:20],
-                       "date_order": statement.date_order, "dropped": statement.dropped})
         sid = secrets.token_urlsafe(24)
-        analysis = build_analysis(secrets.token_hex(6), statement, source, store.dismissals(), demo=demo, use_paypal=use_paypal)
+        analysis = analysis_from_text(text, source, demo=demo, mapping=parse_mapping(mapping), invert_sign=invert_sign, currency=default_currency,
+                                      use_paypal=use_paypal, dismissals=store.dismissals(), analysis_id=secrets.token_hex(6))
         sessions.put(sid, analysis)
         resp = JSONResponse(analysis.overview_json(store.dismissals()))
         resp.set_cookie(COOKIE, sid, httponly=True, samesite="strict", path="/", max_age=6 * 3600)

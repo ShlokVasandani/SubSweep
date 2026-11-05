@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app.py": {
+      "maxDuration": 30,
+      "includeFiles": "{web/**,config/**,data/paypal_mock.json}",
+      "excludeFiles": "{tests/**,docs/**,scripts/**,sample_data/**,.github/**,logs/**}"
+    }
+  }
+}

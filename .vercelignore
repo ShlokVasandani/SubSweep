@@ -1,0 +1,7 @@
+tests
+docs
+scripts
+sample_data
+logs
+.github
+*.md

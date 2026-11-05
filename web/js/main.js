@@ -1,5 +1,5 @@
 import { $, $$, el, clear, toast, initPointerFx, observeReveals, reduceMotion } from "./util.js";
-import { api, ApiError } from "./api.js";
+import { api, ApiError, hostedMode } from "./api.js";
 import { initTheme, snap, tweenTo, setProgress } from "./theme.js";
 import { initLanding, setLandingVisible } from "./scenes.js";
 import { renderOverview } from "./overview.js";
@@ -128,6 +128,7 @@ async function submit({ file = null, demo = false, mapping = null, invert = fals
   if (invert) fd.set("invert_sign", "true");
   try {
     const [data] = await Promise.all([api.analyze(fd), new Promise((r) => setTimeout(r, reduceMotion() ? 0 : 1400))]);   // a beat, so the progress isn't a flash
+    hostedMode.remember(demo ? { demo: true } : { file, options: { mapping: mapping ?? null, invert_sign: !!invert, default_currency: "USD" } });
     setAnalysis(data);
     pendingFile = null;
     setBusy(false);
@@ -141,10 +142,18 @@ async function submit({ file = null, demo = false, mapping = null, invert = fals
 
 const HOSTED_NOTE = "Uploads are switched off on this hosted demo, so nothing of yours is sent anywhere. Try the sample statement, or run SubSweep on your own computer to analyse your own statement.";
 
-/** The hosted demo (a serverless build) takes the sample statement only: say so plainly instead of promising things that are not true there. */
+/** The hosted build (serverless) works differently from running SubSweep locally, so the page must say what is actually true there. */
 function applyHostedMode(h) {
-  if (!h?.hosted_demo) return;
-  document.documentElement.dataset.hosted = "demo";
+  if (!h?.hosted) return;
+  hostedMode.enable(true);
+  document.documentElement.dataset.hosted = h.uploads ? "uploads" : "demo";
+  if (h.uploads) {
+    $(".privacy-line span").replaceChildren(
+      el("strong", {}, "Your statement stays in this browser tab."),
+      " Each action sends it over HTTPS to be analysed in memory; the server never stores or logs it, and nothing is cancelled or sent for you. ",
+      `Files up to ${h.limits?.max_upload_mb ?? 4} MB. To keep it on your own machine entirely, run SubSweep locally (see the README).`);
+    return;
+  }
   fileInput.disabled = true;
   $("#btn-choose").hidden = true;
   $("#drop-idle .drop-title").textContent = "Try the sample statement";
@@ -158,7 +167,7 @@ function applyHostedMode(h) {
 function pick(files) {
   const f = files?.[0];
   if (!f) return;
-  if (state.health?.hosted_demo) { dropError(HOSTED_NOTE); return; }
+  if (state.health?.hosted && state.health.uploads === false) { dropError(HOSTED_NOTE); return; }
   if (!/\.(csv|tsv|txt)$/i.test(f.name)) { dropError("That doesn't look like a statement export. Please choose a .csv file."); return; }
   submit({ file: f });
 }
@@ -173,7 +182,7 @@ drop.addEventListener("drop", (e) => pick(e.dataTransfer?.files));
 $("#cta-top").addEventListener("click", (e) => {
   e.preventDefault();
   $("#drop").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
-  setTimeout(() => (state.health?.hosted_demo ? $("#btn-demo") : $("#btn-choose")).focus({ preventScroll: true }), 600);
+  setTimeout(() => (state.health?.hosted && state.health.uploads === false ? $("#btn-demo") : $("#btn-choose")).focus({ preventScroll: true }), 600);
 });
 
 // ---------------------------------------------------------------------------------------------------------- column mapper
