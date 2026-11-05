@@ -105,7 +105,7 @@ user's own spending by choosing one of a fixed set of pandas analyses and wordin
 ### Privacy and safety
 
 Statements are processed in memory and never written to disk; the only thing kept is which findings you dismissed. The live demo runs on a serverless host, where no request shares memory with another, so the browser keeps your statement in the tab and re-sends it with each action; the server analyses it in memory and keeps nothing (decisions live in your own cookie). This was tested in a real browser against three separate server processes that share nothing, and the deployed site was checked as an anonymous visitor. Uploads are
-limited to 5 MB and checked by type and content, oversized bodies are cut off while they stream in, the page is served with a
+limited to 5 MB (4 MB on the live demo) and checked by type and content, oversized bodies are cut off while they stream in, the page is served with a
 strict Content-Security-Policy, and text from a statement is only ever inserted into the page as text. A security test suite
 attacks the running API with hostile files, oversized cells, secrets in the environment and statements full of personal
 identifiers, and each new protection was confirmed to fail its test when removed.
@@ -140,7 +140,7 @@ reason, and every AI answer to carry the data behind it, made the product more t
 ## What's next
 
 - Run the PayPal sandbox integration live end to end and the AI layer against the live Anthropic API (see the status table in the
-  README for what has been verified so far). [Update this line after your live run.]
+  README for what has been verified so far).
 - Recognise biweekly plans and add multi-currency health scoring.
 - Subscriber-side PayPal data if and when it becomes available, so no CSV is needed.
 - Bank connections through an aggregator, with the same privacy rules.
