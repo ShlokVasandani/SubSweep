@@ -139,9 +139,26 @@ async function submit({ file = null, demo = false, mapping = null, invert = fals
   }
 }
 
+const HOSTED_NOTE = "Uploads are switched off on this hosted demo, so nothing of yours is sent anywhere. Try the sample statement, or run SubSweep on your own computer to analyse your own statement.";
+
+/** The hosted demo (a serverless build) takes the sample statement only: say so plainly instead of promising things that are not true there. */
+function applyHostedMode(h) {
+  if (!h?.hosted_demo) return;
+  document.documentElement.dataset.hosted = "demo";
+  fileInput.disabled = true;
+  $("#btn-choose").hidden = true;
+  $("#drop-idle .drop-title").textContent = "Try the sample statement";
+  $("#drop-hint").textContent = "This hosted demo runs on a made-up statement. Uploads are switched off here.";
+  $(".formats").hidden = true;
+  $(".privacy-line span").replaceChildren(
+    el("strong", {}, "This is a hosted demo of a made-up statement."),
+    " Uploads are switched off here, so nothing of yours is sent anywhere. To analyse your own statement, run SubSweep on your own computer (see the README), where it stays.");
+}
+
 function pick(files) {
   const f = files?.[0];
   if (!f) return;
+  if (state.health?.hosted_demo) { dropError(HOSTED_NOTE); return; }
   if (!/\.(csv|tsv|txt)$/i.test(f.name)) { dropError("That doesn't look like a statement export. Please choose a .csv file."); return; }
   submit({ file: f });
 }
@@ -156,7 +173,7 @@ drop.addEventListener("drop", (e) => pick(e.dataTransfer?.files));
 $("#cta-top").addEventListener("click", (e) => {
   e.preventDefault();
   $("#drop").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
-  setTimeout(() => $("#btn-choose").focus({ preventScroll: true }), 600);
+  setTimeout(() => (state.health?.hosted_demo ? $("#btn-demo") : $("#btn-choose")).focus({ preventScroll: true }), 600);
 });
 
 // ---------------------------------------------------------------------------------------------------------- column mapper
@@ -197,5 +214,5 @@ initTheme();
 initPointerFx();
 initLanding();
 setProgress();
-api.health().then((h) => { state.health = h; updateBadges(); }).catch(() => {});
+api.health().then((h) => { state.health = h; updateBadges(); applyHostedMode(h); }).catch(() => {});
 route();

@@ -47,5 +47,8 @@ class Store:
             self._conn.execute("DELETE FROM dismissals")
             self._conn.commit()
 
+    def write(self, response) -> None:
+        """Decisions are already on disk, so there is nothing to send to the browser (the hosted demo's cookie store does use this)."""
+
     def close(self) -> None:
         self._conn.close()

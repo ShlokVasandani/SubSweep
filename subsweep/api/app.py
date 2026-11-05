@@ -5,6 +5,7 @@ Statements never touch disk (only the user's dismiss / "still using" decisions a
 """
 from __future__ import annotations
 
+import copy
 import csv
 import json
 import secrets
@@ -13,7 +14,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import FastAPI, File, Form, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +30,8 @@ from subsweep.paypal import current_mode
 from subsweep.store import Store
 
 from .analysis import Analysis, build_analysis
+from .decisions import COOKIE as DECISIONS_COOKIE
+from .decisions import CookieDecisions
 from .serialize import jsonable
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
@@ -37,6 +40,10 @@ ALLOWED_EXT = {".csv", ".txt", ".tsv"}
 MAX_SESSIONS = 12
 MAX_AI_CALLS_PER_ANALYSIS = 300
 COOKIE = "subsweep_session"
+HOSTED_MAX_BODY = 64 * 1024              # the hosted demo takes no uploads: the only request bodies are tiny forms and JSON
+HOSTED_MAX_AI_CALLS = 500                # per server instance; the hosted demo uses built-in text unless the operator turns the model on
+HOSTED_MESSAGE = ("Uploads are switched off on this hosted demo, so nothing of yours is sent anywhere. Try the sample statement, "
+                  "or run SubSweep on your own computer to analyse your own statement: it never leaves your machine.")
 CSP = ("default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; "
        "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'")
 _BINARY_MAGIC = (b"%PDF", b"PK\x03\x04", b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"MZ", b"\x7fELF", b"\xd0\xcf\x11\xe0")
@@ -50,8 +57,10 @@ class BodyLimitMiddleware:
     """Cuts off oversized request bodies while they stream in, so a huge upload is never written to disk or held in memory before the
     friendly size check in /api/analyze gets to run. Checks Content-Length up front and counts bytes for chunked bodies."""
 
-    def __init__(self, app, max_bytes: int):
-        self.app, self.max_bytes = app, max_bytes
+    def __init__(self, app, max_bytes: int, *, code: str = "too_large", message: str | None = None):
+        self.app, self.max_bytes, self.code = app, max_bytes, code
+        self.message = message or (f"That's more than a statement should need (limit {MAX_UPLOAD_BYTES // (1024 * 1024)} MB). "
+                                   "Try exporting a shorter date range.")
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -59,8 +68,7 @@ class BodyLimitMiddleware:
         declared = dict(scope["headers"]).get(b"content-length", b"")
 
         async def reject():
-            body = json.dumps({"error": {"code": "too_large", "message": f"That's more than a statement should need (limit {MAX_UPLOAD_BYTES // (1024 * 1024)} MB). "
-                                         "Try exporting a shorter date range.", "details": {}}}).encode()
+            body = json.dumps({"error": {"code": self.code, "message": self.message, "details": {}}}).encode()
             await send({"type": "http.response.start", "status": 413, "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode()),
                                                                                   (b"connection", b"close"), (b"cache-control", b"no-store")]})
             await send({"type": "http.response.body", "body": body})
@@ -121,6 +129,14 @@ def _check_upload(name: str, data: bytes) -> None:
         raise ApiError(415, "wrong_file_type", "That file looks like a binary file (such as a PDF or spreadsheet), not a CSV. Please export a CSV from your bank or PayPal.")
 
 
+def build_demo_analysis() -> Analysis:
+    """The sample statement's analysis. Deterministic (fixed seed, dates relative to the last charge), so any server instance can rebuild it."""
+    statement = load_statement(demo_statement_csv(), None, default_currency="USD", source_label="demo")
+    source = {"kind": "demo", "filename": "sample statement", "format": statement.format, "rows": int(len(statement.transactions)),
+              "warnings": statement.warnings[:20], "date_order": statement.date_order, "dropped": statement.dropped}
+    return build_analysis("demo", statement, source, {}, demo=True)
+
+
 class Sessions:
     def __init__(self):
         self._d: OrderedDict[str, Analysis] = OrderedDict()
@@ -142,13 +158,20 @@ class Sessions:
             self._d.pop(sid, None)
 
 
-def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None, audit_path: str | Path | None = None) -> FastAPI:
+def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None, audit_path: str | Path | None = None, *,
+               hosted_demo: bool = False) -> FastAPI:
+    """`hosted_demo=True` is the build for a serverless host (see app.py and the README): sample data only, no uploads, no disk, no shared
+    memory. Every request can be served by a different instance, so the sample analysis is rebuilt on demand and each visitor's decisions
+    live in their own cookie."""
     app = FastAPI(title="SubSweep", version=__version__, docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json")
-    store = Store(db_path)
+    store = Store(":memory:" if hosted_demo else db_path)
     assistant = ai if ai is not None else AIAssistant(build_default_llm(), AuditLog(audit_path))
     sessions = Sessions()
     app.state.store, app.state.ai, app.state.sessions = store, assistant, sessions
-    app.add_middleware(BodyLimitMiddleware, max_bytes=MAX_UPLOAD_BYTES + 256 * 1024)      # the file plus multipart overhead and the small form fields
+    if hosted_demo:
+        app.add_middleware(BodyLimitMiddleware, max_bytes=HOSTED_MAX_BODY, code="hosted_demo", message=HOSTED_MESSAGE)
+    else:
+        app.add_middleware(BodyLimitMiddleware, max_bytes=MAX_UPLOAD_BYTES + 256 * 1024)      # the file plus multipart overhead and the small form fields
 
     # ------------------------------------------------------------------ plumbing
     @app.exception_handler(ApiError)
@@ -177,18 +200,47 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
             resp.headers["Cache-Control"] = "no-store"
         return resp
 
+    hosted_base: dict[str, Analysis] = {}
+    hosted_lock = threading.Lock()
+    hosted_ai_calls = [0]
+
+    def decisions(request: Request):
+        return CookieDecisions(request) if hosted_demo else store
+
+    def hosted_view(d) -> Analysis:
+        """The sample analysis as this visitor sees it: a shallow copy, so one visitor's decisions never change another's view."""
+        with hosted_lock:
+            if "a" not in hosted_base:
+                hosted_base["a"] = build_demo_analysis()
+            base = hosted_base["a"]
+        a = copy.copy(base)
+        a.refresh(d.dismissals())
+        return a
+
+    if hosted_demo:
+        app.state.hosted_view = hosted_view          # exposed so a test can prove that two visitors' views are independent objects
+
     def current(request: Request) -> tuple[str, Analysis]:
+        if hosted_demo:
+            if request.cookies.get(COOKIE) != "demo":
+                raise ApiError(404, "no_analysis", "There's no statement loaded yet. Try the sample data.")
+            return "demo", hosted_view(decisions(request))
         sid = request.cookies.get(COOKIE)
         a = sessions.get(sid)
         if a is None:
             raise ApiError(404, "no_analysis", "There's no statement loaded yet. Upload one, or try the sample data.")
         return sid, a
 
-    def findings_payload(a: Analysis) -> dict:
-        d = a.overview_json(store.dismissals())
-        return {"summary": d["summary"], "findings": d["findings"]}
+    def findings_payload(a: Analysis, d) -> dict:
+        view = a.overview_json(d.dismissals())
+        return {"summary": view["summary"], "findings": view["findings"]}
 
     def ai_gate(a: Analysis) -> None:
+        if hosted_demo:
+            hosted_ai_calls[0] += 1
+            if hosted_ai_calls[0] > HOSTED_MAX_AI_CALLS:
+                raise ApiError(429, "ai_limit", "This hosted demo has answered a lot of AI requests; please try again later.")
+            return
         a.ai_calls += 1
         if a.ai_calls > MAX_AI_CALLS_PER_ANALYSIS:
             raise ApiError(429, "ai_limit", "That's a lot of AI requests for one statement. Start a new analysis to continue.")
@@ -198,7 +250,7 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     def health():
         llm = assistant.llm
         return {"ok": True, "version": __version__, "ai": {"mode": assistant.mode, "model": getattr(llm, "model", None)},
-                "paypal_mode": current_mode(), "limits": {"max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024)}}
+                "paypal_mode": current_mode(), "limits": {"max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024)}, "hosted_demo": hosted_demo}
 
     # ------------------------------------------------------------------ analysis
     @app.post("/api/analyze")
@@ -213,6 +265,13 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     ):
         if len(default_currency) != 3 or not default_currency.isalpha():
             raise ApiError(400, "bad_currency", "Currency should be a three-letter code such as USD, EUR or INR.")
+        if hosted_demo:
+            if not demo:
+                raise ApiError(403, "hosted_demo", HOSTED_MESSAGE)
+            d = decisions(request)
+            resp = JSONResponse(hosted_view(d).overview_json(d.dismissals()))
+            resp.set_cookie(COOKIE, "demo", httponly=True, samesite="strict", secure=request.url.scheme == "https", path="/", max_age=6 * 3600)
+            return resp
         warnings: list[str] = []
         if demo:
             text, name = demo_statement_csv(), "sample statement"
@@ -264,7 +323,7 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     @app.get("/api/analysis")
     def get_analysis(request: Request):
         _, a = current(request)
-        return a.overview_json(store.dismissals())
+        return a.overview_json(decisions(request).dismissals())
 
     @app.delete("/api/analysis")
     def forget(request: Request):
@@ -294,29 +353,35 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
         return f
 
     @app.post("/api/findings/{fid}/dismiss")
-    def dismiss(fid: str, body: Dismiss, request: Request):
+    def dismiss(fid: str, body: Dismiss, request: Request, response: Response):
         _, a = current(request)
         f = _finding(a, fid)
         if body.reason == "still_using" and f.type != "POSSIBLY_FORGOTTEN":
             raise ApiError(400, "not_applicable", "'Still using' only applies to 'possibly forgotten' findings. Use Dismiss instead.")
-        store.dismiss(fid, body.reason)
-        a.refresh(store.dismissals())
-        return findings_payload(a)
+        d = decisions(request)
+        d.dismiss(fid, body.reason)
+        a.refresh(d.dismissals())
+        d.write(response)
+        return findings_payload(a, d)
 
     @app.post("/api/findings/{fid}/restore")
-    def restore(fid: str, request: Request):
+    def restore(fid: str, request: Request, response: Response):
         _, a = current(request)
         _finding(a, fid)
-        store.restore(fid)
-        a.refresh(store.dismissals())
-        return findings_payload(a)
+        d = decisions(request)
+        d.restore(fid)
+        a.refresh(d.dismissals())
+        d.write(response)
+        return findings_payload(a, d)
 
     @app.delete("/api/dismissals")
-    def reset_decisions(request: Request):
+    def reset_decisions(request: Request, response: Response):
         _, a = current(request)
-        store.clear()
+        d = decisions(request)
+        d.clear()
         a.refresh({})
-        return findings_payload(a)
+        d.write(response)
+        return findings_payload(a, d)
 
     # ------------------------------------------------------------------ AI
     @app.post("/api/findings/{fid}/explain")
