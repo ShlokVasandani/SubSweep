@@ -1,8 +1,8 @@
 # Manual steps checklist
 
 Things only you can do. Deadline: **Thursday 12 November 2026, 12:00 pm Pacific**. Do not leave the Devpost submission for the
-last hour. The repository is `https://github.com/ShlokVasandani/SubSweep`; its only branch, `claude/gifted-pasteur-caj2lo`, is
-already its default branch, so there is nothing to merge before judges see the code.
+last hour. The repository is `https://github.com/ShlokVasandani/SubSweep`; its default (and only) branch is
+`main`, so there is nothing to merge before judges see the code.
 
 ## 1. Before you record (recommended, about 30 minutes)
 
