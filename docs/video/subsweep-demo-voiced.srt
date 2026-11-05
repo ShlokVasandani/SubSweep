@@ -26,24 +26,24 @@ none of it stands out.
 SubSweep finds it.
 
 7
-00:00:20,500 --> 00:00:22,866
+00:00:21,800 --> 00:00:24,166
 I drop in a statement CSV.
 
 8
-00:00:23,122 --> 00:00:25,899
+00:00:24,422 --> 00:00:27,199
 It can come from a bank, a card or PayPal.
 
 9
-00:00:26,172 --> 00:00:31,394
+00:00:29,802 --> 00:00:35,024
 SubSweep detects the format and cleans up
 the messy merchant names, and it all stays
 
 10
-00:00:31,394 --> 00:00:32,451
+00:00:35,024 --> 00:00:36,081
 on this computer.
 
 11
-00:00:32,686 --> 00:00:35,949
+00:00:36,316 --> 00:00:39,579
 The only thing ever saved is which findings
 I dismiss.
 
@@ -136,28 +136,28 @@ SubSweep only reads status; it cannot cancel
 anything.
 
 31
-00:01:55,504 --> 00:01:56,985
+00:01:57,504 --> 00:01:58,985
 Let me act on the duplicate.
 
 32
-00:01:57,342 --> 00:02:03,207
+00:01:59,342 --> 00:02:05,207
 SubSweep drafts a short, polite message,
 with placeholders for my own account
 
 33
-00:02:03,207 --> 00:02:03,816
+00:02:05,207 --> 00:02:05,816
 details.
 
 34
-00:02:04,061 --> 00:02:05,156
+00:02:06,061 --> 00:02:07,156
 It is never sent.
 
 35
-00:02:05,252 --> 00:02:08,087
+00:02:07,252 --> 00:02:10,087
 There is a copy button, and that is all.
 
 36
-00:02:08,427 --> 00:02:10,945
+00:02:10,427 --> 00:02:12,945
 I decide what happens next.
 
 37
