@@ -81,6 +81,8 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   templates, CONTRIBUTING, SECURITY, CHANGELOG, `requirements-dev.txt`.
   - Found while testing: the PayPal panel told an uploader to "Set PAYPAL_MODE=mock", an instruction for running locally; and a file over the
     host's body limit got a bare platform error. Both now have friendly, accurate messages.
+  - The demo video is uploaded and public (https://youtu.be/YL8AeXLKieA, 2:29, with a custom thumbnail); the README, the Devpost text and the pack
+    all link to it, and the checker now fails if they differ or a placeholder is left.
   - Vercel Authentication was on for every `vercel.app` URL by default; it was turned off (with the owner's approval) so the demo is public.
 
 ## Next

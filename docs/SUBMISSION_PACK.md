@@ -8,10 +8,11 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 | | Item | Why |
 |---|---|---|
 | 1 | **Use `subsweep-demo-voiced.mp4` (it has the voice-over).** | The silent `subsweep-demo.mp4` is kept as a fallback. The voice-over is your ElevenLabs take, placed sentence by sentence against the clicks; `subsweep-demo-voiced.srt` holds captions timed to it. A few sentences were trimmed or reordered from `docs/DEMO_SCRIPT.md` to match what is on screen (the demo-data sentence plays while the PayPal panel is showing). |
-| 2 | **The video's closing card shows `github.com/ShlokVasandani/SubSweep`.** | The repository must be public before anyone watches it. Making it public is your call; I have not changed it. |
+| 2 | **The video is uploaded and public.** | https://youtu.be/YL8AeXLKieA (2:29, public, thumbnail set). Its closing card shows the repository address, and the repository is public, so that works. |
 | 3 | **PayPal beat = demo data.** | Recorded in `PAYPAL_MODE=mock`, so the panel carries the "Demo data" badge, and the captions say so. Nothing in the video presents it as live PayPal. |
 | 4 | **AI beat = built-in wording.** | No Anthropic key here, so the top bar reads "AI: built-in text" and the captions use the script's "AI is not on" sentence instead of claiming Claude wrote it. |
-| 5 | **Two blanks to fill in the pasted text.** | `[Update this line after your live run.]` at the end of the "What's next" bullet in the description (delete the bracket if you do not run live; keep the sentence above it, which is true as written), and the YouTube link in "Try it out links". |
+| 5 | **One blank to fill in the pasted text.** | `[Update this line after your live run.]` at the end of the "What's next" bullet in the description: delete the bracket if you do not run PayPal or Claude live (the sentence above it is true as written). |
+| 7 | **Add the captions file to the YouTube video.** | YouTube is showing its own auto-transcript, which mishears the product name ("Subeep", "Sub sweep"). In YouTube Studio, Subtitles, Add, Upload file, choose `subsweep-demo-voiced.srt`. |
 | 6 | **PayPal sandbox and the Anthropic API have never run live from here.** | The README and Devpost text say so truthfully. If you run them on your machine, update those lines (see `docs/MANUAL_STEPS.md`, section 1). |
 
 ## Files to upload
@@ -24,7 +25,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 | `docs/video/subsweep-demo.mp4` | Silent fallback | 2:29.4 long, 1920x1080, h264, 30 fps, 18.3 MB, no audio. sha256 `1ffea2575c5fc6ae...` |
 | `docs/video/subsweep-demo.srt` | Captions for the silent version only | 43 captions, matching the recorded variants |
 | `docs/screenshots/*.jpg` | Devpost image gallery, in this order | see below |
-| Repository | Devpost "Try it out" link | https://github.com/ShlokVasandani/SubSweep (**must be public by the time you submit**) |
+| Repository | Devpost "Try it out" link | https://github.com/ShlokVasandani/SubSweep (public) |
 
 The video is under 3:00 (the hackathon limit) and follows the seven beats of `docs/DEMO_SCRIPT.md`.
 
@@ -202,7 +203,7 @@ identifiers, and each new protection was confirmed to fail its test when removed
 - A real use of PayPal that does something a bank statement alone cannot: catching a subscription that PayPal shows as cancelled
   but that is still being charged.
 - An AI layer that is useful without being trusted: grounded, redacted, auditable and optional.
-- 1,139 automated tests, including real-browser checks against a multi-instance deployment model and a security suite, and a polished interface with a night and day theme,
+- 1,141 automated tests, including real-browser checks against a multi-instance deployment model and a security suite, and a polished interface with a night and day theme,
   full keyboard use, labelled controls, and text contrast checked against the real colour values.
 
 ## What I learned
@@ -238,7 +239,13 @@ Python, pandas, NumPy, rapidfuzz, FastAPI, uvicorn, SQLite, httpx, PyYAML, JavaS
 ```
 https://github.com/ShlokVasandani/SubSweep
 https://subsweep-chi.vercel.app
-[YouTube link: fill in after uploading]
+https://youtu.be/YL8AeXLKieA
+```
+
+### Video demo link
+
+```
+https://youtu.be/YL8AeXLKieA
 ```
 
 ### Testing instructions (if the form has a field for it)

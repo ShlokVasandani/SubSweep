@@ -9,7 +9,7 @@ last hour. The repository is `https://github.com/ShlokVasandani/SubSweep`; its d
 These two checks are the only parts of the project that have never run against the real service, because the build environment
 could not reach PayPal and had no keys. Do them first: if either one fails, tell me the exact error rather than working around it.
 
-- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `1135 passed, 4 skipped`.
+- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `1137 passed, 4 skipped`.
 - [ ] **PayPal sandbox, live.** Follow [Live sandbox setup](../README.md#live-sandbox-setup-optional-about-10-minutes), approve the
       subscriptions as the buyer, then `python -m pytest tests/integration -v`. Success: the checks pass or skip with a clear
       reason (a missing Transaction Search scope, or subscription IDs PayPal does not recognise).
@@ -29,25 +29,26 @@ A silent screen recording of the whole script already exists (`docs/video/subswe
 You can upload it as it is with captions, or add a voice-over from the script, or re-record it after a live run (`node scripts/record_demo.js`, then
 `python scripts/make_captions.py` and `python scripts/make_submission_pack.py`).
 
-- [ ] Follow [DEMO_SCRIPT.md](DEMO_SCRIPT.md), including the "Before you record" list. Target 2:30; it must be **under 3:00**.
-- [ ] Rehearse twice with a timer. The video has to show the app working, so every beat has something on screen.
-- [ ] Do not show `.env`, API keys or a terminal that prints them.
+- [x] Follow [DEMO_SCRIPT.md](DEMO_SCRIPT.md), including the "Before you record" list. Target 2:30; it must be **under 3:00**. (Recorded: 2:29, with voice-over.)
+- [x] Rehearse twice with a timer. The video has to show the app working, so every beat has something on screen.
+- [x] Do not show `.env`, API keys or a terminal that prints them.
 
 ## 3. Upload to YouTube (public)
 
-- [ ] Upload the video; set visibility to **Public** (not Unlisted, not Private).
-- [ ] Title: `SubSweep: find the subscriptions quietly draining you`. Put the GitHub link in the description.
-- [ ] Open the link in a private/incognito window and check it plays without signing in.
+- [x] Upload the video; set visibility to **Public** (not Unlisted, not Private). Done: https://youtu.be/YL8AeXLKieA (checked: public, 2:29).
+- [x] Title: `SubSweep: find the subscriptions quietly draining you`. Put the GitHub link in the description.
+- [x] Open the link in a private/incognito window and check it plays without signing in. (Fetched anonymously: public.)
+- [ ] Add `docs/video/subsweep-demo-voiced.srt` as captions (YouTube Studio, Subtitles, Add, Upload file).
 
 ## 4. Make the GitHub repository public
 
-- [ ] GitHub, the repository, **Settings**, **General**, **Danger Zone**, **Change visibility**, **Make public**.
-- [ ] Add a short "About" description and a few topics (for example `subscriptions`, `paypal`, `fastapi`, `claude`).
+- [x] GitHub, the repository, **Settings**, **General**, **Danger Zone**, **Change visibility**, **Make public**. (It is public.)
+- [x] Add a short "About" description and a few topics. (Done, with the live demo as the website.)
 - [ ] Open the repository in a private window: the README renders, the Mermaid diagram draws, the screenshots show, and the
       LICENSE is detected as MIT.
-- [ ] Check no secrets are in the history. I scanned for tracked `.env`, database and log files and for key-shaped strings outside
+- [x] Check no secrets are in the history. I scanned for tracked `.env`, database and log files and for key-shaped strings outside
       the tests and found none; run your own check if you ever pasted a key into a file: `git log -p | grep -iE "sk-ant|client_secret"`.
-- [ ] Confirm the build dates in the README's "When it was built" section: `git log --reverse --format='%ad %s' --date=short`
+- [x] Confirm the build dates in the README's "When it was built" section: `git log --reverse --format='%ad %s' --date=short`
       (every commit should be dated 2026-11-04 or later, after the 1 October start).
 
 ## 5. Submit on Devpost

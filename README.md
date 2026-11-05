@@ -11,6 +11,7 @@ Built for the PayPal AI Hackathon. MIT licensed.
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 
 **Try it now: <https://subsweep-chi.vercel.app>** Drop in your own CSV, or click "Try the sample data". Nothing is stored.
+**Watch the 2:30 demo: <https://youtu.be/YL8AeXLKieA>**
 
 ![SubSweep landing page](docs/screenshots/01-landing.jpg)
 
@@ -133,7 +134,7 @@ python -m subsweep.findings my_statement.csv             # findings, savings and
 python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # works without a key
 python -m subsweep.paypal status                         # PayPal view (honours PAYPAL_MODE)
 pip install -r requirements-dev.txt                      # adds pytest
-python -m pytest                                         # 1139 tests; browser and live PayPal checks skip themselves when unavailable
+python -m pytest                                         # 1141 tests; browser and live PayPal checks skip themselves when unavailable
 ```
 
 ## Architecture
@@ -458,7 +459,7 @@ Be clear about what has and hasn't been run, because it affects how far to trust
 ## Tests
 
 ```bash
-python -m pytest              # 1139 tests: 1135 pass, 4 live-PayPal checks skip without credentials
+python -m pytest              # 1141 tests: 1137 pass, 4 live-PayPal checks skip without credentials
 python -m pytest tests/ui     # real-browser checks (needs Node and Playwright; skipped automatically otherwise)
 ```
 

@@ -129,7 +129,7 @@ identifiers, and each new protection was confirmed to fail its test when removed
 - A real use of PayPal that does something a bank statement alone cannot: catching a subscription that PayPal shows as cancelled
   but that is still being charged.
 - An AI layer that is useful without being trusted: grounded, redacted, auditable and optional.
-- 1,139 automated tests, including real-browser checks against a multi-instance deployment model and a security suite, and a polished interface with a night and day theme,
+- 1,141 automated tests, including real-browser checks against a multi-instance deployment model and a security suite, and a polished interface with a night and day theme,
   full keyboard use, labelled controls, and text contrast checked against the real colour values.
 
 ## What I learned
@@ -165,7 +165,7 @@ Python, pandas, NumPy, rapidfuzz, FastAPI, uvicorn, SQLite, httpx, PyYAML, JavaS
 
 - Code: https://github.com/ShlokVasandani/SubSweep
 - Live demo: https://subsweep-chi.vercel.app
-- Video: [your YouTube link, set to Public]
+- Video: https://youtu.be/YL8AeXLKieA
 
 ## Image gallery (upload from `docs/screenshots/`)
 

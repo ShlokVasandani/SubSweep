@@ -93,3 +93,16 @@ def test_checker_allows_the_fictional_and_example_addresses(monkeypatch):
 def test_the_first_commit_is_after_the_hackathon_start():
     first = cs.first_commit_date()
     assert first is None or first >= cs.HACKATHON_START
+
+
+def test_the_youtube_link_is_the_same_everywhere_and_no_placeholder_is_left():
+    link = set(__import__("re").findall(r"https://youtu\.be/[\w-]{11}", (ROOT / "README.md").read_text()))
+    assert len(link) == 1
+    for rel in ("docs/DEVPOST.md", "docs/SUBMISSION_PACK.md"):
+        assert link <= set(__import__("re").findall(r"https://youtu\.be/[\w-]{11}", (ROOT / rel).read_text())), rel
+    assert "[YouTube link" not in (ROOT / "docs" / "SUBMISSION_PACK.md").read_text()
+
+
+def test_checker_flags_a_missing_or_placeholder_youtube_link(monkeypatch):
+    assert any("YouTube" in p for p in broken(monkeypatch, "README.md", lambda t: t.replace("https://youtu.be/YL8AeXLKieA", "")))
+    assert any("placeholder" in p for p in broken(monkeypatch, "docs/DEVPOST.md", lambda t: t + "\n- Video: [your YouTube link, set to Public]\n"))

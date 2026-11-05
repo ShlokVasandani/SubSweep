@@ -19,6 +19,7 @@ _spec.loader.exec_module(cs)
 
 REPO = "https://github.com/ShlokVasandani/SubSweep"
 LIVE = "https://subsweep-chi.vercel.app"
+YOUTUBE = "https://youtu.be/YL8AeXLKieA"
 VIDEO = ROOT / "docs" / "video" / "subsweep-demo.mp4"
 SRT = ROOT / "docs" / "video" / "subsweep-demo.srt"
 TESTING = ("Open https://subsweep-chi.vercel.app, click \"Try the sample data\" or drop in your own bank or PayPal CSV (up to 4 MB).\n"
@@ -85,10 +86,11 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 | | Item | Why |
 |---|---|---|
 | 1 | **Use `subsweep-demo-voiced.mp4` (it has the voice-over).** | The silent `subsweep-demo.mp4` is kept as a fallback. The voice-over is your ElevenLabs take, placed sentence by sentence against the clicks; `subsweep-demo-voiced.srt` holds captions timed to it. A few sentences were trimmed or reordered from `docs/DEMO_SCRIPT.md` to match what is on screen (the demo-data sentence plays while the PayPal panel is showing). |
-| 2 | **The video's closing card shows `github.com/ShlokVasandani/SubSweep`.** | The repository must be public before anyone watches it. Making it public is your call; I have not changed it. |
+| 2 | **The video is uploaded and public.** | https://youtu.be/YL8AeXLKieA (2:29, public, thumbnail set). Its closing card shows the repository address, and the repository is public, so that works. |
 | 3 | **PayPal beat = demo data.** | Recorded in `PAYPAL_MODE=mock`, so the panel carries the "Demo data" badge, and the captions say so. Nothing in the video presents it as live PayPal. |
 | 4 | **AI beat = built-in wording.** | No Anthropic key here, so the top bar reads "AI: built-in text" and the captions use the script's "AI is not on" sentence instead of claiming Claude wrote it. |
-| 5 | **Two blanks to fill in the pasted text.** | `[Update this line after your live run.]` at the end of the "What's next" bullet in the description (delete the bracket if you do not run live; keep the sentence above it, which is true as written), and the YouTube link in "Try it out links". |
+| 5 | **One blank to fill in the pasted text.** | `[Update this line after your live run.]` at the end of the "What's next" bullet in the description: delete the bracket if you do not run PayPal or Claude live (the sentence above it is true as written). |
+| 7 | **Add the captions file to the YouTube video.** | YouTube is showing its own auto-transcript, which mishears the product name ("Subeep", "Sub sweep"). In YouTube Studio, Subtitles, Add, Upload file, choose `subsweep-demo-voiced.srt`. |
 | 6 | **PayPal sandbox and the Anthropic API have never run live from here.** | The README and Devpost text say so truthfully. If you run them on your machine, update those lines (see `docs/MANUAL_STEPS.md`, section 1). |
 
 ## Files to upload
@@ -101,7 +103,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 | `docs/video/subsweep-demo.mp4` | Silent fallback | {mm}:{ss:04.1f} long, {v['size']}, {v['codec']}, {v['fps']} fps, {v['bytes'] / 1e6:.1f} MB, no audio. sha256 `{sha[:16]}...` |
 | `docs/video/subsweep-demo.srt` | Captions for the silent version only | {ncaps} captions, matching the recorded variants |
 | `docs/screenshots/*.jpg` | Devpost image gallery, in this order | see below |
-| Repository | Devpost "Try it out" link | {REPO} (**must be public by the time you submit**) |
+| Repository | Devpost "Try it out" link | {REPO} (public) |
 
 The video is under 3:00 (the hackathon limit) and follows the seven beats of `docs/DEMO_SCRIPT.md`.
 
@@ -149,7 +151,11 @@ Visibility: **Public**. After uploading, open the link in a private window to co
 
 ### Try it out links
 
-{fenced(REPO + chr(10) + "https://subsweep-chi.vercel.app" + chr(10) + "[YouTube link: fill in after uploading]")}
+{fenced(REPO + chr(10) + LIVE + chr(10) + YOUTUBE)}
+
+### Video demo link
+
+{fenced(YOUTUBE)}
 
 ### Testing instructions (if the form has a field for it)
 

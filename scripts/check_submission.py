@@ -108,6 +108,12 @@ def problems() -> list[str]:
     if first is not None and first < HACKATHON_START:
         out.append(f"the first commit is dated {first}, before the {HACKATHON_START} hackathon start")
 
+    pat = r"https://youtu\.be/[\w-]{11}"
+    in_readme, in_devpost = set(re.findall(pat, readme)), set(re.findall(pat, devpost))
+    if len(in_readme) != 1 or in_readme != in_devpost:
+        out.append(f"the README and the Devpost text must each link to the same single YouTube video (README: {sorted(in_readme) or 'none'}, Devpost: {sorted(in_devpost) or 'none'})")
+    if "[your YouTube link" in devpost or "[YouTube link" in _read("docs/SUBMISSION_PACK.md"):
+        out.append("a YouTube link placeholder is still in the Devpost text or the submission pack")
     for link in set(re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+)", readme)):
         if not (ROOT / link).exists():
             out.append(f"README links to {link}, which does not exist")
