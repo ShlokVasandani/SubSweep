@@ -56,7 +56,7 @@ function draftBlock(f) {
       clear(wrap);
       const subject = el("input", { class: "field", value: d.subject, "aria-label": "Message subject" });
       const body = el("textarea", { "aria-label": "Message body", spellcheck: "true" }); body.value = d.body;
-      const copy = el("button", { class: "btn btn-primary btn-sm", type: "button", on: { click: async () => { await copyText(`Subject: ${subject.value}\n\n${body.value}`); copy.replaceChildren(icon("check"), "Copied"); setTimeout(() => copy.replaceChildren(icon("copy"), "Copy message"), 2200); } } }, icon("copy"), "Copy message");
+      const copy = el("button", { class: "btn btn-primary btn-sm", type: "button", on: { click: async () => { if (await copyText(`Subject: ${subject.value}\n\n${body.value}`)) copy.replaceChildren(icon("check"), "Copied"); else { toast("Couldn't copy automatically. Select the message text and press Ctrl+C (Cmd+C on a Mac)."); return; } setTimeout(() => copy.replaceChildren(icon("copy"), "Copy message"), 2200); } } }, icon("copy"), "Copy message");
       wrap.append(el("div", { class: "draft ai" },
         el("div", { class: "ai-top" }, icon("sparkle"), "Draft message", el("span", { class: "chip" + (d.generated_by === "model" ? " good" : "") }, d.generated_by === "model" ? "Written by Claude" : "Built-in template")),
         subject, el("div", { style: { height: "10px" } }), body,

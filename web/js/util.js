@@ -111,10 +111,12 @@ export function initPointerFx() {
   }, { passive: true });
 }
 
-export function copyText(text) {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  const ta = el("textarea", { style: { position: "fixed", opacity: "0" } });
+/** Copies text and resolves true on success, false if the browser refuses (permission denied, insecure page). Never rejects. */
+export async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through to the older method */ }
+  const ta = el("textarea", { style: { position: "fixed", opacity: "0" }, "aria-hidden": "true", tabindex: "-1" });
   ta.value = text; document.body.append(ta); ta.select();
-  try { document.execCommand("copy"); } finally { ta.remove(); }
-  return Promise.resolve();
+  try { return document.execCommand("copy"); } catch { return false; } finally { ta.remove(); }
 }

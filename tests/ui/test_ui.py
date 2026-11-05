@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 CHECKS = [
     "landing_loads_clean", "skip_link_and_keyboard", "theme_toggle_persists", "scroll_changes_the_theme_and_unravels",
     "reduced_motion_shows_finished_states", "demo_flow_and_overview", "no_horizontal_scroll_at_any_width",
-    "hero_descenders_not_clipped", "subscriptions_sort_filter_expand", "findings_ai_dismiss_undo_draft", "still_using_only_on_forgotten", "ask_flow_and_guardrails",
+    "hero_descenders_not_clipped", "demo_video_script_walkthrough", "copy_message_degrades_gracefully", "subscriptions_sort_filter_expand", "findings_ai_dismiss_undo_draft", "still_using_only_on_forgotten", "ask_flow_and_guardrails",
     "upload_real_file_and_error_states", "column_mapper_dialog", "empty_state_for_short_statements", "accessible_names_and_headings",
     "hostile_text_cannot_run_script", "mobile_navigation", "forget_statement",
 ]

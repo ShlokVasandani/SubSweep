@@ -177,6 +177,51 @@ const go = async (page, route) => { await page.click(`#tabs a[data-route="${rout
     ok(bad.length === 0, bad.join(" | "));
   });
 
+  // The 2:30 demo video script (docs/DEMO_SCRIPT.md) is only useful if every click and every figure it mentions is really on screen.
+  await check(browser, "demo_video_script_walkthrough", async (page) => {
+    await page.goto(BASE, { waitUntil: "networkidle" });
+    await page.setInputFiles("#file", path.join(FIX, "demo_statement.csv"));                          // beat 2: upload the statement
+    await page.waitForURL("**/#/overview", { timeout: 15000 }); await page.waitForSelector(".ring-score");
+    await page.waitForTimeout(2200);
+    const ov = await page.locator("#view-overview").innerText();                                    // beat 3: the picture
+    ok(/\$1,697/.test(ov) && /10 active subscriptions/.test(ov) && /\b45\b/.test(ov), "overview shows $1,697, 10 active subscriptions and a score of 45");
+    await page.getByText("How is this calculated?").click();
+    await go(page, "subscriptions");
+    await page.getByRole("button", { name: "Details for Netflix" }).click();
+    await page.waitForSelector("#view-subscriptions canvas", { timeout: 8000 });
+    ok(/charge history/i.test(await page.locator("#view-subscriptions").innerText()) && /confidence/i.test(await page.locator("#view-subscriptions .detail:not([hidden])").innerText()), "Netflix row shows the chart and the confidence reason");
+    await go(page, "findings");                                                                      // beat 4: the duplicate
+    const dup = page.locator("article.fc", { hasText: "Streamly: 2 active subscriptions" });
+    await dup.waitFor({ timeout: 8000 });
+    await dup.getByText("Show data used").click();
+    ok(/99\.99/.test(await dup.innerText()), "the duplicate card shows its data, including $99.99");
+    const fit = page.locator("article.fc", { hasText: "FitPass Gym: charged after PayPal cancelled" });  // beat 5: PayPal check
+    ok(await fit.getByRole("link", { name: /Manage in PayPal/ }).isVisible(), "the PayPal mismatch card links to PayPal");
+    ok(/\$48\.00/.test(await fit.innerText()) && /11 Aug 2026/.test(await fit.innerText()), "the mismatch card names the 11 Aug cancellation and $48.00 charged since");
+    await dup.getByRole("button", { name: "Draft a message for me" }).click();                       // beat 6: the draft
+    const body = dup.locator('textarea[aria-label="Message body"]'); await body.waitFor({ timeout: 8000 });
+    ok(/\[ACCOUNT NAME\]/.test(await body.inputValue()), "the draft keeps the [ACCOUNT NAME] placeholder");
+    await dup.getByRole("button", { name: "Copy message" }).click();
+    await dup.getByRole("button", { name: /Copied/ }).waitFor({ timeout: 4000 });
+    await go(page, "ask");                                                                           // beat 7: one question
+    await page.getByRole("button", { name: "What do I spend on streaming?" }).click();
+    await page.waitForFunction(() => /25\.98/.test(document.querySelector("#view-ask").innerText), null, { timeout: 15000 });
+    const ask = await page.locator("#view-ask").innerText();
+    ok(/Hulu/.test(ask) && /Netflix/.test(ask) && /Show data used/.test(ask), "the answer names Hulu and Netflix and offers Show data used");
+    return "every beat of the script is on screen";
+  }, { permissions: ["clipboard-read", "clipboard-write"] });
+
+  // Browsers can refuse clipboard access (permission denied, or an insecure page). That must never be an unhandled error or a silent no-op.
+  await check(browser, "copy_message_degrades_gracefully", async (page) => {
+    await demo(page); await go(page, "findings");
+    const dup = page.locator("article.fc", { hasText: "Streamly: 2 active subscriptions" });
+    await dup.getByRole("button", { name: "Draft a message for me" }).click();
+    await dup.locator('textarea[aria-label="Message body"]').waitFor({ timeout: 8000 });
+    await dup.getByRole("button", { name: "Copy message" }).click();
+    await page.waitForFunction(() => /Copied/.test(document.querySelector("#view-findings").innerText) || /Couldn.t copy/.test(document.querySelector("#toasts").innerText), null, { timeout: 4000 });
+    return "either copied or told the user";          // check() itself fails the test on any page error
+  });
+
   await check(browser, "subscriptions_sort_filter_expand", async (page) => {
     await demo(page); await go(page, "subscriptions");
     eq(await page.locator("tbody tr.row").count(), 10, "ten rows");
