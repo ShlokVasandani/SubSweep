@@ -17,3 +17,8 @@ logs/
 docs/video/*.mp4
 docs/video/*.webm
 docs/video/_raw/
+
+# Packaging artifacts
+*.egg-info/
+build/
+dist/
