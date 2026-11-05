@@ -15,6 +15,8 @@ from typing import Any
 _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"sk-ant-[A-Za-z0-9_\-]{8,}"), "[SECRET]"),
     (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+"), "[EMAIL]"),
+    # A mangled address ("john.doe@ gmail", "name@") that lost its domain upstream is still personal.
+    (re.compile(r"[A-Za-z0-9._%+\-]+@(?=\s|$)"), "[EMAIL]"),
     # Whole card numbers first (13-19 digits, spaces or dashes allowed), so no label pattern can leave a tail behind.
     (re.compile(r"\b\d(?:[ -]?\d){12,18}\b"), "[CARD]"),
     # "card 4111-11..." / "card no: XXXX 1234" / "card ending in 1234": take the label and the whole digit run.

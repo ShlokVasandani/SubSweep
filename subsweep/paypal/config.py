@@ -69,4 +69,6 @@ class PayPalConfig:
             raise PayPalNotConfigured(
                 "SubSweep is a sandbox-only demo. PAYPAL_API_BASE must be https://api-m.sandbox.paypal.com "
                 "(set SUBSWEEP_ALLOW_LIVE=1 only if you really mean to use a live account).")
-        return cls(cid, sec, base, os.environ.get("PAYPAL_MANAGE_URL") or None)
+        manage = (os.environ.get("PAYPAL_MANAGE_URL") or "").strip()
+        # This ends up in an href in the browser: accept https links only (never javascript:, data: or plain http).
+        return cls(cid, sec, base, manage if manage.lower().startswith("https://") else None)

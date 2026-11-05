@@ -5,6 +5,7 @@ Statements never touch disk (only the user's dismiss / "still using" decisions a
 """
 from __future__ import annotations
 
+import csv
 import json
 import secrets
 import threading
@@ -39,6 +40,60 @@ COOKIE = "subsweep_session"
 CSP = ("default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; "
        "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'")
 _BINARY_MAGIC = (b"%PDF", b"PK\x03\x04", b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"MZ", b"\x7fELF", b"\xd0\xcf\x11\xe0")
+
+
+class _TooLarge(Exception):
+    pass
+
+
+class BodyLimitMiddleware:
+    """Cuts off oversized request bodies while they stream in, so a huge upload is never written to disk or held in memory before the
+    friendly size check in /api/analyze gets to run. Checks Content-Length up front and counts bytes for chunked bodies."""
+
+    def __init__(self, app, max_bytes: int):
+        self.app, self.max_bytes = app, max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        declared = dict(scope["headers"]).get(b"content-length", b"")
+
+        async def reject():
+            body = json.dumps({"error": {"code": "too_large", "message": f"That's more than a statement should need (limit {MAX_UPLOAD_BYTES // (1024 * 1024)} MB). "
+                                         "Try exporting a shorter date range.", "details": {}}}).encode()
+            await send({"type": "http.response.start", "status": 413, "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode()),
+                                                                                  (b"connection", b"close"), (b"cache-control", b"no-store")]})
+            await send({"type": "http.response.body", "body": body})
+
+        if declared.isdigit() and int(declared) > self.max_bytes:
+            return await reject()
+        seen, tripped, replied = 0, False, False
+
+        async def limited_receive():
+            nonlocal seen, tripped
+            msg = await receive()
+            if msg["type"] == "http.request":
+                seen += len(msg.get("body", b""))
+                if seen > self.max_bytes:
+                    tripped = True
+                    raise _TooLarge()
+            return msg
+
+        async def guarded_send(msg):
+            nonlocal replied
+            if tripped:                      # the app may have turned our exception into its own 400/500; the client gets one clear 413 instead
+                if not replied:
+                    replied = True
+                    await reject()
+                return
+            await send(msg)
+
+        try:
+            await self.app(scope, limited_receive, guarded_send)
+        except _TooLarge:
+            pass
+        if tripped and not replied:
+            await reject()
 
 
 class ApiError(Exception):
@@ -93,6 +148,7 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
     assistant = ai if ai is not None else AIAssistant(build_default_llm(), AuditLog(audit_path))
     sessions = Sessions()
     app.state.store, app.state.ai, app.state.sessions = store, assistant, sessions
+    app.add_middleware(BodyLimitMiddleware, max_bytes=MAX_UPLOAD_BYTES + 256 * 1024)      # the file plus multipart overhead and the small form fields
 
     # ------------------------------------------------------------------ plumbing
     @app.exception_handler(ApiError)
@@ -189,6 +245,9 @@ def create_app(db_path: str | Path | None = None, ai: AIAssistant | None = None,
             raise ApiError(422, "needs_mapping", str(exc), {"headers": exc.headers, "suggestions": exc.suggestions}) from None
         except StatementTooLargeError as exc:
             raise ApiError(413, "too_large", str(exc)) from None
+        except (csv.Error, UnicodeError):
+            raise ApiError(422, "unreadable_file", "We couldn't read that file as a CSV (a cell is far too long, or the text encoding is broken). "
+                           "Please export the statement again as a plain CSV.") from None
         if len(statement.transactions) == 0:
             raise ApiError(422, "no_transactions", "We couldn't find any transactions in that file. Check it's a statement export with dates and amounts.",
                            {"warnings": statement.warnings})

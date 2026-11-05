@@ -39,6 +39,7 @@ _UPI_NOISE = {
     "mandate", "autopay", "collect", "request", "sent", "received", "via", "on", "for",
 }
 _VPA_RE = re.compile(r"\S+@\S+")
+_EMAIL_RE = re.compile(r"[\w.%+\-]+@[\w\-]+(?:\.[\w\-]+)+")      # a full address (UPI handles like spotify@okaxis have no dot and are handled separately)
 
 _CARD_MASK = re.compile(
     r"(?:\b(?:card|crd|acct|account|a/c|ac)\s*(?:no\.?|number|#|ending(?: in)?)?\s*[:#]?\s*)?"
@@ -244,6 +245,7 @@ def clean_merchant(raw) -> str:
 
     upi = extract_upi(original)
     s = upi if upi else original
+    s = _EMAIL_RE.sub(" ", s)        # personal addresses must go before punctuation stripping mangles them into something no email pattern recognises
 
     s = strip_card_mask(s)
     s = strip_prefixes(s)
@@ -255,5 +257,5 @@ def clean_merchant(raw) -> str:
     s = _drop_repeated_words(_tidy(s))
 
     if not s:  # everything was noise; fall back so we never return nothing
-        s = _tidy(re.sub(r"\d{4,}", " ", original)) or original
+        s = _tidy(re.sub(r"\d{4,}", " ", _EMAIL_RE.sub(" ", original))) or _EMAIL_RE.sub("", original).strip() or "Unknown merchant"
     return _smart_case(s)

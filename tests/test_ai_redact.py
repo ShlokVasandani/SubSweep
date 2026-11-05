@@ -28,6 +28,8 @@ from subsweep.ai.redact import redact_obj, redact_text
     ("reach me at pat.buyer@example.com", "example.com"),
     ("UPI spotify@okaxis", "okaxis"),
     ("key sk-ant-api03-AbCdEf123456_xyz", "AbCdEf"),
+    ("NETFLIX john.doe@ gmail acct", "john.doe"),          # an address whose domain was mangled away upstream is still personal
+    ("refund to jane_roe+tag@", "jane_roe"),
 ])
 def test_identifiers_are_removed(raw, fragment):
     clean, n = redact_text(raw)
