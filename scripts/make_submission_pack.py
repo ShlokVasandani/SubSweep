@@ -18,6 +18,7 @@ cs = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cs)
 
 REPO = "https://github.com/ShlokVasandani/SubSweep"
+LIVE = "https://subsweep-chi.vercel.app"
 VIDEO = ROOT / "docs" / "video" / "subsweep-demo.mp4"
 SRT = ROOT / "docs" / "video" / "subsweep-demo.srt"
 TESTING = ("Open https://subsweep-chi.vercel.app, click \"Try the sample data\" or drop in your own bank or PayPal CSV (up to 4 MB).\n"
@@ -60,10 +61,20 @@ def main() -> int:
     mm, ss = int(v["seconds"] // 60), v["seconds"] % 60
     shot_rows = "\n".join(f"| {i}. | `docs/screenshots/{f}` | {d} |" for i, (f, d) in enumerate(SHOTS, 1))
     yt_title = name
-    yt_description = (f"SubSweep finds forgotten, duplicate and price-hiked subscriptions from a bank or PayPal statement, explains each one in plain English, "
-                      f"checks PayPal, and drafts the message. You decide; it never cancels anything or sends anything.\n\nCode: {REPO}\n\n"
-                      "Built for the PayPal AI Hackathon.")
-
+    chapters = "\n".join(f"{b['start'] // 60}:{b['start'] % 60:02d} {b['label']}" for b in cs.script_beats())      # same timings as the script, so they cannot drift
+    yt_description = (
+        "Your money is leaving quietly. SubSweep reads a bank or PayPal statement and finds the subscriptions you forgot, doubled up on, or that "
+        "crept up in price, explains each one in plain English, checks PayPal, and drafts the message you could send. You decide: it never "
+        "cancels anything and never sends anything.\n\n"
+        f"Try it live (drop in your own CSV; nothing is stored): {LIVE}\n"
+        f"Code (MIT): {REPO}\n\n"
+        f"{chapters}\n\n"
+        "About what you see: this demo runs on a made-up sample statement. The PayPal panel is bundled demo data and is labelled that way in the app. "
+        "The explanations use the built-in wording; with an Anthropic key, Claude writes them and every figure is still checked against your data.\n\n"
+        "Built for the PayPal AI Hackathon.\n\n"
+        "#SubSweep #PayPal #PersonalFinance")
+    yt_tags = ("SubSweep, subscription tracker, find forgotten subscriptions, recurring charges, PayPal, PayPal API, personal finance, FastAPI, "
+               "Claude, Anthropic, explainable, hackathon, PayPal AI Hackathon, Python")
     md = f"""# Submission pack
 
 Everything to paste or upload, in one place. **Generated** by `scripts/make_submission_pack.py` from `docs/DEVPOST.md` and the files on disk:
@@ -86,6 +97,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 |---|---|---|
 | `docs/video/subsweep-demo-voiced.mp4` | **YouTube (visibility Public), then the Devpost video link** | 2:29.4, 1920x1080, H.264 + AAC voice-over, about 21 MB |
 | `docs/video/subsweep-demo-voiced.srt` | YouTube captions for the voiced video | 41 captions timed to the voice-over |
+| `docs/video/thumbnail.png` | YouTube thumbnail (Customize, Thumbnail) | 1280x720, 1.0 MB; a 170 KB `.jpg` is alongside it |
 | `docs/video/subsweep-demo.mp4` | Silent fallback | {mm}:{ss:04.1f} long, {v['size']}, {v['codec']}, {v['fps']} fps, {v['bytes'] / 1e6:.1f} MB, no audio. sha256 `{sha[:16]}...` |
 | `docs/video/subsweep-demo.srt` | Captions for the silent version only | {ncaps} captions, matching the recorded variants |
 | `docs/screenshots/*.jpg` | Devpost image gallery, in this order | see below |
@@ -108,6 +120,12 @@ Title:
 Description:
 
 {fenced(yt_description)}
+
+Tags (YouTube Studio, "Show more", Tags):
+
+{fenced(yt_tags)}
+
+Thumbnail: upload `docs/video/thumbnail.png` (1280x720, under 2 MB) in YouTube Studio under Customize, Thumbnail. The editable source is `docs/video/thumbnail.html`.
 
 Visibility: **Public**. After uploading, open the link in a private window to confirm it plays without signing in.
 

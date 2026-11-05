@@ -20,6 +20,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 |---|---|---|
 | `docs/video/subsweep-demo-voiced.mp4` | **YouTube (visibility Public), then the Devpost video link** | 2:29.4, 1920x1080, H.264 + AAC voice-over, about 21 MB |
 | `docs/video/subsweep-demo-voiced.srt` | YouTube captions for the voiced video | 41 captions timed to the voice-over |
+| `docs/video/thumbnail.png` | YouTube thumbnail (Customize, Thumbnail) | 1280x720, 1.0 MB; a 170 KB `.jpg` is alongside it |
 | `docs/video/subsweep-demo.mp4` | Silent fallback | 2:29.4 long, 1920x1080, h264, 30 fps, 18.3 MB, no audio. sha256 `1ffea2575c5fc6ae...` |
 | `docs/video/subsweep-demo.srt` | Captions for the silent version only | 43 captions, matching the recorded variants |
 | `docs/screenshots/*.jpg` | Devpost image gallery, in this order | see below |
@@ -47,12 +48,33 @@ SubSweep: find the subscriptions quietly draining you
 Description:
 
 ```
-SubSweep finds forgotten, duplicate and price-hiked subscriptions from a bank or PayPal statement, explains each one in plain English, checks PayPal, and drafts the message. You decide; it never cancels anything or sends anything.
+Your money is leaving quietly. SubSweep reads a bank or PayPal statement and finds the subscriptions you forgot, doubled up on, or that crept up in price, explains each one in plain English, checks PayPal, and drafts the message you could send. You decide: it never cancels anything and never sends anything.
 
-Code: https://github.com/ShlokVasandani/SubSweep
+Try it live (drop in your own CSV; nothing is stored): https://subsweep-chi.vercel.app
+Code (MIT): https://github.com/ShlokVasandani/SubSweep
+
+0:00 The problem
+0:20 Upload
+0:40 Detection
+1:05 A flagged duplicate
+1:30 PayPal status check
+1:55 A drafted message
+2:15 One question
+
+About what you see: this demo runs on a made-up sample statement. The PayPal panel is bundled demo data and is labelled that way in the app. The explanations use the built-in wording; with an Anthropic key, Claude writes them and every figure is still checked against your data.
 
 Built for the PayPal AI Hackathon.
+
+#SubSweep #PayPal #PersonalFinance
 ```
+
+Tags (YouTube Studio, "Show more", Tags):
+
+```
+SubSweep, subscription tracker, find forgotten subscriptions, recurring charges, PayPal, PayPal API, personal finance, FastAPI, Claude, Anthropic, explainable, hackathon, PayPal AI Hackathon, Python
+```
+
+Thumbnail: upload `docs/video/thumbnail.png` (1280x720, under 2 MB) in YouTube Studio under Customize, Thumbnail. The editable source is `docs/video/thumbnail.html`.
 
 Visibility: **Public**. After uploading, open the link in a private window to confirm it plays without signing in.
 
