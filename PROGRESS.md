@@ -34,7 +34,7 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
 - **Phase 6 – frontend + API**: FastAPI app (`subsweep/api/`) serving a no-build vanilla-JS frontend (`web/`): cinematic scroll-driven
   landing (mood blends by scroll, pinned "unravel" scene, 3D card deck), glass UI, night/day themes, five screens with loading /
   empty / error states, Chart.js (vendored) charts, mapper dialog, SQLite decisions store, reproducible 24-month demo statement.
-  Contrast, icons, CSP-safety and escaping are tested statically; 19 real-browser checks run through Playwright.
+  Contrast, icons, CSP-safety and escaping are tested statically; 18 real-browser checks ran through Playwright at the end of this phase (21 now, after Phases 7 and 8).
 
 - **Phase 7 – testing, demo data and hardening**: the planted-findings end-to-end tests and the seeded demo generator were already in place
   from Phase 6 (24-month, see Decisions). New this phase, found by attacking the running app rather than by reading code:
@@ -49,11 +49,25 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
     in the environment never appear in logs, console output, responses or the audit log (including on error paths); hostile uploads;
     link schemes; headers. Five hardening changes were reverted one at a time to confirm each has a test that fails without it.
 
+- **Phase 8 – submission assets**: README rewritten for judges (problem, audience, what it does, screenshots, quick start, demo, a Mermaid
+  architecture diagram checked with the real Mermaid parser, how PayPal and AI are used, a status table that says what has and has not been
+  run live, test summary, layout, build dates). `docs/DEVPOST.md` (name 53 characters, pitch 194), `docs/DEMO_SCRIPT.md` (2:30, seven beats,
+  342 words), `docs/MANUAL_STEPS.md` (the checklist for the parts only you can do), four screenshots in `docs/screenshots/`.
+  - `scripts/check_submission.py` plus `tests/test_submission_docs.py` keep the limits honest: name under 60, pitch under 200, timestamps
+    contiguous and totalling 2:30, each beat speakable, the 24-month explanation present in both README and Devpost text, build dates
+    after 1 Oct, no personal email in any document. Each rule was confirmed to fail on a deliberately broken document.
+  - `demo_video_script_walkthrough` (browser) performs every beat of the script against the real app with the script's own labels and
+    figures, so the script cannot drift from the UI.
+  - Found while doing that: copying a drafted message threw an unhandled error when the browser denied clipboard access, with no feedback.
+    `copyText` now falls back and the user is told if copying fails; `copy_message_degrades_gracefully` covers it (reverted to confirm it fails).
+  - Found while checking the README: uploading `sample_data/demo_statement.csv` without `PAYPAL_MODE=mock` gives 6 findings and no PayPal panel
+    (7 with it, and with the sample-data button). The README and the video script now say to start with `PAYPAL_MODE=mock`.
+
 ## Next
 - Add `ANTHROPIC_API_KEY` and run the AI layer live once (`python -m subsweep.ai mock --explain --ask "..."`): the request
   shape and error mapping are tested against a fake client, but no real API call has been made from the cloud session.
 - Run the PayPal parts live (optional now: the demo no longer depends on it) (needs your sandbox credentials; PayPal hosts are not reachable from the cloud session).
-- Phase 5 – AI layer (explainer, message drafter, Q&A, audit log, redaction). Needs `ANTHROPIC_API_KEY`.
+- Work through `docs/MANUAL_STEPS.md`: live PayPal and live Claude runs, record and upload the video, make the repository public, submit on Devpost.
 
 ## Decisions recorded
 - Account label for dedupe: **off** (placeholder was unfilled; default applied). Known limit: two accounts in the

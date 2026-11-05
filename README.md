@@ -1,24 +1,177 @@
 # SubSweep
 
-Find and clean up forgotten, duplicated, and price-hiked subscriptions from a bank or PayPal statement.
-SubSweep never cancels anything or sends any message on your behalf.
+**Find the subscriptions that are quietly costing you money, from a bank or PayPal statement.** SubSweep spots duplicates, price
+hikes and charges you may have forgotten, explains each one in plain English, checks PayPal for the live status, and drafts the
+message you could send. **You decide. It never cancels anything and never sends anything.**
 
-> Work in progress for the PayPal AI Hackathon. Full README arrives in Phase 8.
+Built for the PayPal AI Hackathon. MIT licensed.
+
+![SubSweep landing page](docs/screenshots/01-landing.jpg)
+
+## The problem
+
+Subscriptions are easy to start and hard to keep track of. A free trial turns into a charge, a plan quietly goes up by a few
+dollars, the same service ends up billed twice (once on a card, once through PayPal), and a yearly renewal lands months after you
+last thought about it. Each charge is small, so none of them stands out in a long statement, but together they add up. Services
+billed through PayPal's automatic payments are the hardest to see, because the billing lives in a separate place from your
+bank statement.
+
+## Who it's for
+
+Anyone who pays for several subscriptions from a card, a bank account or PayPal and has no clear picture of what they are
+paying for. The outcome SubSweep aims for is concrete: a short list of specific charges, each with a dollar amount you could
+save in a year, and a draft message so acting on one takes a minute.
+
+## What it does
+
+- **Reads real statements.** Drop in a CSV from a bank, a card or PayPal. The format is detected automatically (or you map the
+  columns once), merchant names are cleaned (`SQ *NETFLIX.COM 08/12 LOS GATOS CA` becomes `Netflix`), and duplicate rows are removed.
+- **Finds recurring charges with rules you can read.** Weekly, monthly, quarterly and yearly cycles, missed or shifted payments,
+  price changes, and a confidence score with a plain-English reason. Every threshold is in [`config/rules.yaml`](config/rules.yaml)
+  and everything the detector drops is listed with the rule that dropped it. No black box, no ML.
+- **Turns them into findings.** Duplicate subscriptions, price hikes, possibly forgotten subscriptions (labelled as a guess, with
+  the evidence), upcoming annual renewals, and charges that continue after PayPal says the subscription is cancelled. Each comes
+  with the yearly saving and a 0 to 100 subscription health score whose formula is shown.
+- **Uses PayPal for ground truth.** Live subscription status and payments from the PayPal sandbox, merged with your statement
+  without double counting. [More below](#how-paypal-is-used).
+- **Uses AI only where words help.** Claude explains each finding, drafts a polite message, and answers questions about your own
+  spending, but every figure it states is checked against the data it was given. [More below](#how-ai-is-used).
+- **Keeps your data on your computer.** Statements live in memory, card and account numbers are redacted before any model call,
+  and the only thing stored is which findings you dismissed.
+
+| Overview | Findings |
+|---|---|
+| ![Overview with health score](docs/screenshots/03-overview.jpg) | ![A PayPal mismatch finding](docs/screenshots/04-findings.jpg) |
+
+The findings screenshot shows the built-in wording, which is what you get without an Anthropic key. With a key, Claude writes the
+explanation instead (and the figures still have to match).
 
 ## Quick start
 
+You need Python 3.11 or newer. Nothing else is required for the demo: no PayPal account, no API key, no network.
+
 ```bash
-python -m venv .venv && source .venv/bin/activate
+git clone https://github.com/ShlokVasandani/SubSweep.git && cd SubSweep
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m subsweep                                       # then open http://127.0.0.1:8000 and click "Try the sample data"
-python -m subsweep.ingest sample_data/card_split.csv     # parse + clean a statement
-python -m subsweep.detect my_statement.csv --excluded    # find recurring charges, show what was excluded
-python -m subsweep.findings my_statement.csv             # findings, savings and health score
-python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # AI layer (works without a key)
-python -m pytest
+python -m subsweep                                      # serves http://127.0.0.1:8000
 ```
 
-PayPal sandbox commands are in [PayPal integration](#paypal-integration-sandbox) below.
+Open <http://127.0.0.1:8000> and click **Try the sample data**. Optional settings (a PayPal sandbox app, an Anthropic key) go in a
+`.env` file copied from [`.env.example`](.env.example); `.env` is git-ignored and nothing in the repository contains a secret.
+`PORT` and `HOST` change where the server listens.
+
+### Run the demo
+
+1. Click **Try the sample data**. (To upload the same file yourself, `sample_data/demo_statement.csv`, start the server with
+   `PAYPAL_MODE=mock python -m subsweep`; without it an uploaded file is analysed without PayPal data, so you get 6 findings
+   and no PayPal panel instead of 7. Any CSV of your own works too.)
+2. **Overview** shows the sample person's subscriptions: $141.43 a month, $1,697.13 a year across 10 active subscriptions, a health
+   score of 45 ("Needs attention") and about $700 a year at risk across 7 findings.
+3. **Findings** has the planted cases: Streamly billed twice (monthly and yearly), Netflix up from $15.49 to $17.99, Hulu
+   probably forgotten, a domain renewal coming due, and FitPass Gym still charging after PayPal shows it cancelled. Open one,
+   press **Show data used**, then **Draft a message** (copy only).
+4. **Ask** takes questions such as "What do I spend on streaming?". Investment questions and anything unrelated to your
+   statement are refused before any model call.
+
+**Why the demo statement covers 24 months, not 12.** An annual renewal can only be detected from two yearly charges about a year
+apart. A 12-month statement can hold at most one, so it could never show a renewal coming due. The sample therefore spans 24
+months (588 transactions from a fixed seed, so it is reproducible; `python scripts/make_demo_data.py` regenerates it). It plants a
+duplicate, a price hike, a forgotten subscription and an annual renewal, and includes groceries, fuel, coffee, rideshare and
+marketplace shopping that must **not** be flagged. Dates inside the findings are relative to the last charge on the statement, so
+the demo behaves the same on any day.
+
+**The PayPal panel in the demo is demo data, and says so.** Approving a sandbox subscription is a manual step only a person can
+do in a browser, so without credentials (or with `PAYPAL_MODE=mock`) SubSweep uses four bundled fictional subscriptions shaped
+like PayPal's real responses. The panel is labelled "Demo data" and the notice reads "Showing bundled demo data (PayPal mock
+mode). Nothing here comes from a live PayPal account." Live use is described in [Live sandbox setup](#live-sandbox-setup-optional-about-10-minutes).
+
+### Developer commands
+
+```bash
+python -m subsweep.ingest sample_data/card_split.csv     # parse and clean a statement
+python -m subsweep.detect my_statement.csv --excluded    # recurring charges, plus what was excluded and why
+python -m subsweep.findings my_statement.csv             # findings, savings and health score
+python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # works without a key
+python -m subsweep.paypal status                         # PayPal view (honours PAYPAL_MODE)
+python -m pytest                                         # 962 tests; browser and live PayPal checks skip themselves when unavailable
+```
+
+## Architecture
+
+```mermaid
+flowchart LR
+    CSV[/"Bank or PayPal<br/>statement CSV"/]
+
+    subgraph Browser["Browser (vanilla JS, no build step)"]
+        UI["Landing, Overview, Subscriptions,<br/>Findings, Ask"]
+    end
+
+    subgraph Server["FastAPI server (python -m subsweep)"]
+        API["REST API<br/>5 MB body guard, CSP, session cookie"]
+        ING["Ingest<br/>detect format, parse, clean merchants, de-duplicate"]
+        DET["Detect<br/>group, fit cycles, price runs, confidence, exclusions"]
+        FND["Findings<br/>duplicate, price hike, forgotten, renewal, PayPal mismatch<br/>savings and health score"]
+        AI["AI layer<br/>facts, redact, model, grounding check, audit log"]
+        PP["PayPal layer<br/>OAuth, Transaction Search, Subscriptions, mock mode"]
+        DB[("SQLite<br/>your dismissals only")]
+    end
+
+    RULES[["config/rules.yaml<br/>every threshold"]]
+    CLAUDE(["Anthropic API"])
+    PAYPAL(["PayPal sandbox<br/>read-only"])
+
+    CSV --> UI
+    UI -->|upload| API
+    API --> ING --> DET --> FND
+    PP -->|"confirmed payments<br/>and live status"| DET
+    PP -->|"cancelled but still charged"| FND
+    FND -->|"findings and evidence"| API
+    API <-->|"explain, draft, ask"| AI
+    AI <-->|"redacted facts only"| CLAUDE
+    PP <-->|"GET only"| PAYPAL
+    API <--> DB
+    API -->|"JSON"| UI
+    RULES -.-> DET
+    RULES -.-> FND
+```
+
+A request flows left to right: the browser uploads a file, the server parses and cleans it, detects recurring charges, merges in
+PayPal data, and generates findings. Only after that does the AI layer see anything, and only a small, redacted fact sheet
+about one finding or one question. The browser gets JSON and draws it; text from your statement is inserted with `textContent`
+only, never as HTML.
+
+| What leaves your computer | When | What is sent |
+|---|---|---|
+| Nothing | Default (no keys set) | Everything runs locally; AI features use built-in templates |
+| PayPal sandbox requests | Only if you add sandbox credentials | OAuth, and read-only `GET` calls |
+| Anthropic API requests | Only if you set `ANTHROPIC_API_KEY` | Redacted fact sheets (merchant, amounts, dates, cycle): never IDs, raw bank descriptions, card or account numbers, emails or phone numbers. "Show data used" reveals exactly what was sent |
+
+## How PayPal is used
+
+Three PayPal developer-platform APIs, all read-only and sandbox-only: **OAuth 2.0** (client credentials), **Transaction Search**
+(`GET /v1/reporting/transactions`) and **Subscriptions** (`GET /v1/billing/subscriptions/{id}`). They do three jobs:
+
+1. **Payments in.** PayPal payments are imported and merged with your statement. A bank row that mentions PayPal and matches a
+   PayPal payment is kept once and marked "confirmed by PayPal", so nothing is counted twice.
+2. **Live status.** Detected PayPal-billed subscriptions are matched to live PayPal subscriptions and show their status, next
+   billing date and last payment.
+3. **The mismatch finding.** If PayPal says a subscription is cancelled, suspended or expired but your statement keeps charging
+   it, you get a high-severity `PAYPAL_MISMATCH` finding with the amount charged since.
+
+SubSweep contains no code that cancels or suspends anything: you get a link to PayPal's automatic-payments page to act yourself,
+and any non-`GET` call raises an error unless it was explicitly confirmed. Details, endpoints, scopes, retry behaviour and the
+mock mode are in [PayPal integration](#paypal-integration-sandbox).
+
+## How AI is used
+
+Claude (via the Anthropic API) does three things: **explains** a finding in two or three calm sentences, **drafts** a polite
+cancellation, price-query or refund message (never sent), and **answers questions** about your own spending by choosing one of a
+fixed set of pandas analyses and wording its small result table. The design rule is that Python computes every number and the
+model only words it, and that is enforced rather than requested: facts first, minimal redacted data, a grounding check that
+discards any reply containing a figure or date not in the data, guardrails that refuse investment advice and prompt injection
+before any model call, and an audit log. With no key, every feature falls back to a built-in template and labels itself as such.
+Details are in [AI layer](#ai-layer-anthropic).
 
 ## How detection works
 
@@ -242,14 +395,6 @@ redacted from everything sent to the model and from the audit log, and a test su
 is inserted into the page with `textContent` only, which a test enforces by scanning the code and by loading a statement with
 a hostile merchant name and filename in a real browser.
 
-**The demo statement.** `python scripts/make_demo_data.py` writes `sample_data/demo_statement.csv`: 24 months and 588
-transactions generated from a fixed seed, with about ten subscriptions and these planted findings: a **duplicate** (Streamly
-billed monthly and yearly), a **price hike** (Netflix $15.49 to $17.99), a **forgotten** subscription (Hulu), an **annual
-renewal** coming due (a domain, about 12 Nov 2026), and, once the PayPal demo data is merged in, a **cancelled-in-PayPal but
-still-charging** subscription (FitPass Gym). Groceries, fuel, coffee, rideshare and marketplace shopping are included and
-must not be flagged. It covers 24 months rather than 12 because a yearly renewal can only be detected from two yearly charges
-about a year apart, so a 12-month window could never contain a renewal and show it coming due.
-
 **Browser tests.** `python -m pytest tests/ui` drives Chromium through Playwright against a live server: keyboard use, theme
 persistence and repaint, the scroll-driven theme change, reduced motion, the full sample flow, error states, the column
 mapper, three viewport widths with no horizontal scroll, accessible names, and hostile text. They need Node and Playwright
@@ -257,6 +402,62 @@ mapper, three viewport widths with no horizontal scroll, accessible names, and h
 
 Known limits: biweekly plans are not recognised, a single yearly charge cannot be detected, and the merchant
 cleaner only strips a curated list of cities, so unusual place names can survive into the merchant name.
+
+## Status and what has been verified
+
+Be clear about what has and hasn't been run, because it affects how far to trust each part.
+
+| Area | State |
+|---|---|
+| Ingestion, detection, findings, health score | Fully tested, including false-positive cases (groceries, fuel and coffee must not be flagged) and mutation checks that revert a rule to confirm a test fails |
+| Web app and API | Tested end to end, including 21 real-browser checks (Chromium via Playwright) and a security suite that attacks the running API |
+| PayPal integration | Written against PayPal's published OpenAPI schemas and tested against simulated PayPal responses. **Not yet run against the live sandbox from the build environment** (PayPal's hosts were not reachable there and no credentials were available). `python -m pytest tests/integration -v` runs read-only live checks once credentials are set, and skips cleanly otherwise |
+| AI layer | Tested against a scripted fake model (request shape, error mapping, grounding, guardrails, redaction, audit log). **Not yet run against the live Anthropic API.** Without a key the built-in templates are used, and the interface shows "AI: built-in text" |
+
+## Tests
+
+```bash
+python -m pytest              # 962 tests: 958 pass, 4 live-PayPal checks skip without credentials
+python -m pytest tests/ui     # real-browser checks (needs Node and Playwright; skipped automatically otherwise)
+```
+
+The suite is hermetic: outside `tests/integration`, `PAYPAL_MODE=mock` is forced and `.env` is ignored, so no test can reach live
+PayPal or the Anthropic API even when real keys are present.
+
+## Project layout
+
+```
+subsweep/
+  ingest/      statement formats, dates, amounts, merchant cleaning, de-duplication
+  detect/      grouping, cycle fitting, price runs, confidence, false-positive exclusions
+  findings/    finding rules, savings, health score
+  paypal/      OAuth client, Transaction Search, Subscriptions, merge and matching, mock mode, seed
+  ai/          fact sheets, redaction, guardrails, grounding check, audit log, explainer, drafter, Q&A
+  api/         FastAPI app (uploads, sessions, security headers) and JSON serialisation
+  store.py     SQLite store for your dismiss decisions (the only thing persisted)
+web/           the frontend: HTML, CSS and vanilla JS modules, no build step (Chart.js and fonts vendored)
+config/        rules.yaml: every detection and finding threshold
+sample_data/   demo and format-test statements
+scripts/       demo data generator and PayPal sandbox seed script
+tests/         unit, API, security, frontend and browser tests
+docs/          screenshots, Devpost text, demo video script, manual submission checklist
+```
+
+## When it was built
+
+SubSweep was built for the PayPal AI Hackathon after its 1 October 2026 start. The first commit is dated **4 November 2026**
+and every commit since is later; the work ran from **4 to 5 November 2026** and the submission deadline is 12 November 2026.
+
+| Date | Work |
+|---|---|
+| 4 Nov 2026 | Phases 1 to 6: statement ingestion, detection rules, findings and health score, PayPal integration and mock mode, AI layer, web app and demo data |
+| 5 Nov 2026 | Phase 7 (testing and security hardening) and Phase 8 (documentation and submission assets) |
+
+You can check the dates yourself: `git log --reverse --format='%ad %s' --date=short`. [`PROGRESS.md`](PROGRESS.md) records what was
+done, what is next and any blockers.
+
+Third-party code and fonts (Chart.js under MIT; Fraunces and Hanken Grotesk under the SIL Open Font License) are vendored under
+`web/vendor/` with their licences in `web/vendor/THIRD_PARTY.md`.
 
 ## License
 
