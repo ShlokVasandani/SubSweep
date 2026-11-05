@@ -14,16 +14,16 @@ from typing import Any
 
 _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"sk-ant-[A-Za-z0-9_\-]{8,}"), "[SECRET]"),
-    (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+"), "[EMAIL]"),
+    (re.compile(r"(?<![A-Za-z0-9._%+\-])[A-Za-z0-9._%+\-]++@[A-Za-z0-9.\-]++"), "[EMAIL]"),
     # A mangled address ("john.doe@ gmail", "name@") that lost its domain upstream is still personal.
-    (re.compile(r"[A-Za-z0-9._%+\-]+@(?=\s|$)"), "[EMAIL]"),
+    (re.compile(r"(?<![A-Za-z0-9._%+\-])[A-Za-z0-9._%+\-]++@(?=\s|$)"), "[EMAIL]"),
     # Whole card numbers first (13-19 digits, spaces or dashes allowed), so no label pattern can leave a tail behind.
     (re.compile(r"\b\d(?:[ -]?\d){12,18}\b"), "[CARD]"),
     # "card 4111-11..." / "card no: XXXX 1234" / "card ending in 1234": take the label and the whole digit run.
-    (re.compile(r"(?i)\b(?:card|crd)\b[\s:#]*(?:no\.?|number|ending(?:\s+in)?)?[\s:#]*(?:[x*•]{2,}[\s-]*)?\d[\d -]{2,}\d"), "[CARD]"),
-    (re.compile(r"(?i)[x*•]{2,}(?:[\s-]+[x*•]{2,})*[\s-]*\d{2,4}\b"), "[CARD]"),
+    (re.compile(r"(?i)\b(?:card|crd)\b[\s:#]*+(?:no\.?|number|ending(?:\s+in)?)?[\s:#]*+(?:[x*•]{2,}+[\s-]*+)?\d[\d -]{2,}\d"), "[CARD]"),
+    (re.compile(r"(?i)(?<![x*•])[x*•]{2,}+(?:[\s-]++[x*•]{2,}+)*+[\s-]*+\d{2,4}\b"), "[CARD]"),
     (re.compile(r"(?i)\bending(?:\s+in)?\s*\d{4}\b"), "[CARD]"),
-    (re.compile(r"(?i)\b(?:a/c|acct|account|acc)\.?\s*(?:no\.?|number|#)?\s*[:\-]?\s*\d[\d\- ]{4,}\d"), "[ACCOUNT]"),
+    (re.compile(r"(?i)\b(?:a/c|acct|account|acc)\.?\s*+(?:no\.?|number|#)?\s*+[:\-]?\s*+\d[\d\- ]{4,}\d"), "[ACCOUNT]"),
     (re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b"), "[ACCOUNT]"),
     (re.compile(r"\+\d{1,3}[\s-]?\(?\d{2,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}\b"), "[PHONE]"),
     (re.compile(r"(?i)\b(?:tel|phone|mobile|ph)\.?[\s:]*\d[\d\s().-]{7,}\d"), "[PHONE]"),
@@ -31,9 +31,14 @@ _PATTERNS: list[tuple[re.Pattern, str]] = [
 ]
 
 
+MAX_REDACT_CHARS = 20_000
+
+
 def redact_text(text: str) -> tuple[str, int]:
-    """Return (clean_text, number_of_redactions)."""
+    """Return (clean_text, number_of_redactions). Anything beyond MAX_REDACT_CHARS is dropped (never sent on), which also bounds the work."""
     count = 0
+    if len(text) > MAX_REDACT_CHARS:
+        text, count = text[:MAX_REDACT_CHARS] + " [TRUNCATED]", 1
     for pat, token in _PATTERNS:
         text, n = pat.subn(token, text)
         count += n

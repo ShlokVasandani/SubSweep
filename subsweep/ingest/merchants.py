@@ -38,17 +38,18 @@ _UPI_NOISE = {
     "payment", "upi", "pay", "paid", "from", "to", "ref", "refno", "txn", "transfer",
     "mandate", "autopay", "collect", "request", "sent", "received", "via", "on", "for",
 }
-_VPA_RE = re.compile(r"\S+@\S+")
-_EMAIL_RE = re.compile(r"[\w.%+\-]+@[\w\-]+(?:\.[\w\-]+)+")      # a full address (UPI handles like spotify@okaxis have no dot and are handled separately)
+MAX_DESCRIPTION_CHARS = 1000
+_VPA_RE = re.compile(r"(?<!\S)\S+@\S+")            # start only at the beginning of a token, so a long token with no "@" is scanned once, not from every position
+_EMAIL_RE = re.compile(r"(?<![\w.%+\-])[\w.%+\-]++@[\w\-]++(?:\.[\w\-]++)++")      # a full address (UPI handles like spotify@okaxis have no dot and are handled separately)
 
 _CARD_MASK = re.compile(
-    r"(?:\b(?:card|crd|acct|account|a/c|ac)\s*(?:no\.?|number|#|ending(?: in)?)?\s*[:#]?\s*)?"
-    r"(?:[x*•]{2,}[\s-]*){1,4}\d{2,4}\b|\bending(?: in)?\s*\d{4}\b|\bxx+\d{3,4}\b",
+    r"(?:\b(?:card|crd|acct|account|a/c|ac)\s*+(?:no\.?|number|#|ending(?: in)?)?\s*+[:#]?\s*+)?"
+    r"(?<![x*•])(?:[x*•]{2,}+[\s-]*+){1,4}+\d{2,4}\b|\bending(?: in)?\s*\d{4}\b|\bxx+\d{3,4}\b",
     re.I,
 )
 _REF_LABELLED = re.compile(
     r"\b(?:ref(?:erence)?|txn|trans(?:action)?|trn|rrn|utr|order|inv(?:oice)?|id|auth|conf(?:irmation)?)(?![A-Za-z])"
-    r"[\s.#:/\-]*(?:no\.?|number|id)?[\s.#:/\-]*(?=[A-Za-z0-9\-]*\d)[A-Za-z0-9\-]{3,}",
+    r"[\s.#:/\-]*+(?:no\.?|number|id)?[\s.#:/\-]*+(?=[A-Za-z0-9\-]*\d)[A-Za-z0-9\-]{3,}",
     re.I,
 )
 _HASH_REF = re.compile(r"#\s*[A-Za-z0-9\-]+")
@@ -239,7 +240,7 @@ def clean_merchant(raw) -> str:
     """Return a cleaned merchant name; falls back to a tidied raw string."""
     if raw is None:
         return ""
-    original = str(raw).strip()
+    original = str(raw).strip()[:MAX_DESCRIPTION_CHARS]      # a real bank description is under ~150 characters; never let a crafted cell make the cleaner work for minutes
     if not original or original.lower() == "nan":
         return ""
 
