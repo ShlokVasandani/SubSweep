@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "subsweep"
+dynamic = ["version"]
+description = "Find forgotten, duplicate and price-hiked subscriptions from a bank or PayPal statement, with explainable rules and a grounded AI assistant. It never cancels or sends anything."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Shlok Vasandani" }]
+keywords = ["subscriptions", "personal-finance", "paypal", "fastapi", "explainable"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Framework :: FastAPI",
+]
+# Kept identical to requirements.txt (a test enforces it): the hosted build installs from either file.
+dependencies = [
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "rapidfuzz>=3.6",
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "python-multipart>=0.0.9",
+  "httpx>=0.27",
+  "anthropic>=0.40",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/ShlokVasandani/SubSweep"
+Demo = "https://subsweep-chi.vercel.app"
+Issues = "https://github.com/ShlokVasandani/SubSweep/issues"
+
+[project.scripts]
+subsweep = "subsweep.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "subsweep.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["subsweep*"]
