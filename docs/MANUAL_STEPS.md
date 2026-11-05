@@ -9,7 +9,7 @@ already its default branch, so there is nothing to merge before judges see the c
 These two checks are the only parts of the project that have never run against the real service, because the build environment
 could not reach PayPal and had no keys. Do them first: if either one fails, tell me the exact error rather than working around it.
 
-- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `958 passed, 4 skipped`.
+- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `1090 passed, 4 skipped`.
 - [ ] **PayPal sandbox, live.** Follow [Live sandbox setup](../README.md#live-sandbox-setup-optional-about-10-minutes), approve the
       subscriptions as the buyer, then `python -m pytest tests/integration -v`. Success: the checks pass or skip with a clear
       reason (a missing Transaction Search scope, or subscription IDs PayPal does not recognise).
@@ -23,6 +23,11 @@ could not reach PayPal and had no keys. Do them first: if either one fails, tell
       **Try the sample data**. This is what a judge will do.
 
 ## 2. Record the video
+
+A silent screen recording of the whole script already exists (`docs/video/subsweep-demo.mp4`, 2:29, made with `scripts/record_demo.js`, with matching
+`subsweep-demo.srt` captions). It is not committed to the repository. [SUBMISSION_PACK.md](SUBMISSION_PACK.md) lists what it does and does not show.
+You can upload it as it is with captions, or add a voice-over from the script, or re-record it after a live run (`node scripts/record_demo.js`, then
+`python scripts/make_captions.py` and `python scripts/make_submission_pack.py`).
 
 - [ ] Follow [DEMO_SCRIPT.md](DEMO_SCRIPT.md), including the "Before you record" list. Target 2:30; it must be **under 3:00**.
 - [ ] Rehearse twice with a timer. The video has to show the app working, so every beat has something on screen.

@@ -1,0 +1,190 @@
+1
+00:00:00,400 --> 00:00:03,745
+Every month, small charges leave your
+account.
+
+2
+00:00:03,745 --> 00:00:05,927
+A free trial that never ended.
+
+3
+00:00:05,927 --> 00:00:08,109
+A plan that crept up in price.
+
+4
+00:00:08,109 --> 00:00:13,418
+The same service billed twice, once on your
+card and once through PayPal.
+
+5
+00:00:13,418 --> 00:00:18,291
+On a statement full of coffee and groceries,
+none of it stands out.
+
+6
+00:00:18,291 --> 00:00:19,600
+SubSweep finds it.
+
+7
+00:00:20,400 --> 00:00:22,639
+I drop in a statement CSV.
+
+8
+00:00:22,639 --> 00:00:26,255
+It can come from a bank, a card or PayPal.
+
+9
+00:00:26,255 --> 00:00:33,487
+SubSweep detects the format and cleans up
+the messy merchant names, and it all stays
+
+10
+00:00:33,487 --> 00:00:34,951
+on this computer.
+
+11
+00:00:34,951 --> 00:00:39,600
+The only thing ever saved is which findings
+I dismiss.
+
+12
+00:00:40,400 --> 00:00:46,290
+Here is the picture: ten subscriptions,
+about seventeen hundred dollars a year, and
+
+13
+00:00:46,290 --> 00:00:48,348
+a health score of forty-five.
+
+14
+00:00:48,348 --> 00:00:52,252
+This is not machine learning, it is rules
+you can read.
+
+15
+00:00:52,252 --> 00:00:58,426
+Open Netflix: every charge on a chart, the
+step up where the price rose, and the reason
+
+16
+00:00:58,426 --> 00:00:59,987
+SubSweep is confident.
+
+17
+00:00:59,987 --> 00:01:04,600
+Groceries and fuel are excluded, and it says
+which rule did that.
+
+18
+00:01:05,400 --> 00:01:06,518
+Now the findings.
+
+19
+00:01:06,518 --> 00:01:11,779
+Streamly is billed twice: ten dollars a
+month and a hundred a year, both through
+
+20
+00:01:11,779 --> 00:01:12,239
+PayPal.
+
+21
+00:01:12,239 --> 00:01:17,960
+The explanation is in plain English, and I
+can see exactly what data it was built from.
+
+22
+00:01:17,960 --> 00:01:23,221
+Here the wording is built in; with an
+Anthropic key, Claude writes it, and every
+
+23
+00:01:23,221 --> 00:01:25,917
+figure is still checked against the data.
+
+24
+00:01:25,917 --> 00:01:29,600
+Keep one, and that saves about a hundred
+dollars a year.
+
+25
+00:01:30,400 --> 00:01:31,971
+PayPal adds ground truth.
+
+26
+00:01:31,971 --> 00:01:37,503
+FitPass Gym shows as cancelled in PayPal on
+the eleventh of August, yet my statement has
+
+27
+00:01:37,503 --> 00:01:39,891
+two more charges, forty-eight dollars.
+
+28
+00:01:39,891 --> 00:01:42,720
+A bank statement alone could never show
+that.
+
+29
+00:01:42,720 --> 00:01:44,417
+SubSweep only reads status.
+
+30
+00:01:44,417 --> 00:01:48,503
+It cannot cancel anything, it links me to
+PayPal so I act myself.
+
+31
+00:01:48,503 --> 00:01:53,531
+This panel is labelled demo data; with
+sandbox credentials the same screen reads
+
+32
+00:01:53,531 --> 00:01:54,600
+live from PayPal.
+
+33
+00:01:55,400 --> 00:01:58,129
+Let me act on the duplicate.
+
+34
+00:01:58,129 --> 00:02:05,634
+SubSweep drafts a short, polite message,
+with placeholders for my own account
+
+35
+00:02:05,634 --> 00:02:06,413
+details.
+
+36
+00:02:06,413 --> 00:02:08,070
+It is never sent.
+
+37
+00:02:08,070 --> 00:02:11,969
+There is a copy button, and that is all.
+
+38
+00:02:11,969 --> 00:02:14,600
+I decide what happens next.
+
+39
+00:02:15,400 --> 00:02:18,054
+And I can ask my own data a question.
+
+40
+00:02:18,054 --> 00:02:20,133
+What do I spend on streaming?
+
+41
+00:02:20,133 --> 00:02:25,656
+Twenty-six dollars a month, Hulu and
+Netflix, with the data used right there.
+
+42
+00:02:25,656 --> 00:02:28,811
+SubSweep: find what is quietly draining you.
+
+43
+00:02:28,811 --> 00:02:29,600
+You decide.

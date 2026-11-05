@@ -60,6 +60,14 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
     figures, so the script cannot drift from the UI.
   - Found while doing that: copying a drafted message threw an unhandled error when the browser denied clipboard access, with no feedback.
     `copyText` now falls back and the user is told if copying fails; `copy_message_degrades_gracefully` covers it (reverted to confirm it fails).
+  - **Regex denial of service, found by a flaky test** (`test_pathological_inputs_do_not_hang` passed alone at 1.5s against a 2s budget and failed under
+    load). It was real: `clean_merchant("x" * 6000)` ran for over ten seconds and `redact_text` took 17s for 20,000 characters, and a CSV cell can be about
+    128 KB, so one small upload could pin a CPU for minutes. A fuzz of every compiled regex in the package found 10 slow patterns in the merchant cleaner
+    and the redactor, **two of them the email patterns I added in Phase 7**. Fixed with linear patterns (possessive quantifiers, start-of-run
+    lookbehinds) plus hard caps (descriptions 1,000 characters, text sent for redaction 20,000, the rest dropped, never forwarded).
+    `tests/test_redos.py` (132 tests): every redaction pattern fuzzed at 20,000 characters, a scaling check (4x input must cost about 4x, so it does not
+    depend on machine speed), the cleaner and redactor driven with 130 to 200 KB of hostile input, and a crafted upload through the real API. Five
+    reversions confirmed each fix and each cap has a failing test. The Phase 7 security suite had missed this class of bug.
   - Found while checking the README: uploading `sample_data/demo_statement.csv` without `PAYPAL_MODE=mock` gives 6 findings and no PayPal panel
     (7 with it, and with the sample-data button). The README and the video script now say to start with `PAYPAL_MODE=mock`.
 

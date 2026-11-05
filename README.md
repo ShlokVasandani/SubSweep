@@ -94,7 +94,7 @@ python -m subsweep.detect my_statement.csv --excluded    # recurring charges, pl
 python -m subsweep.findings my_statement.csv             # findings, savings and health score
 python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # works without a key
 python -m subsweep.paypal status                         # PayPal view (honours PAYPAL_MODE)
-python -m pytest                                         # 962 tests; browser and live PayPal checks skip themselves when unavailable
+python -m pytest                                         # 1094 tests; browser and live PayPal checks skip themselves when unavailable
 ```
 
 ## Architecture
@@ -389,7 +389,8 @@ every mood palette at its worst case: body text clears WCAG AAA (7:1) on glass a
 stored). Uploads are limited to 5 MB, must be `.csv`, `.tsv` or `.txt`, and are rejected if they look binary. A strict
 Content-Security-Policy (`script-src 'self'`, no inline script, no external hosts) and the usual hardening headers are sent on
 every response; the session cookie is `HttpOnly` and `SameSite=Strict`; AI use is capped per statement. Oversized request bodies are
-cut off while they stream in (a 413, never written to disk), card and account numbers, phone numbers, email addresses and API keys are
+cut off while they stream in (a 413, never written to disk), descriptions are capped at 1,000 characters and every pattern that
+reads them is tested for linear running time against hostile input (`tests/test_redos.py`), card and account numbers, phone numbers, email addresses and API keys are
 redacted from everything sent to the model and from the audit log, and a test suite attacks the running API to keep it that way
 (`tests/test_security.py`). Text from your statement
 is inserted into the page with `textContent` only, which a test enforces by scanning the code and by loading a statement with
@@ -417,7 +418,7 @@ Be clear about what has and hasn't been run, because it affects how far to trust
 ## Tests
 
 ```bash
-python -m pytest              # 962 tests: 958 pass, 4 live-PayPal checks skip without credentials
+python -m pytest              # 1094 tests: 1090 pass, 4 live-PayPal checks skip without credentials
 python -m pytest tests/ui     # real-browser checks (needs Node and Playwright; skipped automatically otherwise)
 ```
 
@@ -438,9 +439,9 @@ subsweep/
 web/           the frontend: HTML, CSS and vanilla JS modules, no build step (Chart.js and fonts vendored)
 config/        rules.yaml: every detection and finding threshold
 sample_data/   demo and format-test statements
-scripts/       demo data generator and PayPal sandbox seed script
+scripts/       demo data generator, PayPal sandbox seed, demo video recorder, captions and submission-pack builders
 tests/         unit, API, security, frontend and browser tests
-docs/          screenshots, Devpost text, demo video script, manual submission checklist
+docs/          screenshots, Devpost text, demo video script, captions and recording log (the mp4 is not committed), manual checklist, submission pack
 ```
 
 ## When it was built

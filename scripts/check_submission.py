@@ -22,7 +22,7 @@ VIDEO_TARGET_SECONDS, VIDEO_LIMIT_SECONDS = 150, 180
 MAX_WORDS_PER_SECOND = 2.8          # about 168 words a minute: brisk but speakable
 ALLOWED_EMAIL_DOMAINS = {"example.com", "example.org", "example.test", "users.noreply.github.com", "anthropic.com"}
 FICTIONAL_ADDRESSES = {"john.doe@gmail.com"}          # the made-up address used in the redaction examples; any other gmail address is flagged
-DOC_FILES = ["README.md", "PROGRESS.md", ".env.example", "docs/DEVPOST.md", "docs/DEMO_SCRIPT.md", "docs/MANUAL_STEPS.md"]
+DOC_FILES = ["README.md", "PROGRESS.md", ".env.example", "docs/DEVPOST.md", "docs/DEMO_SCRIPT.md", "docs/MANUAL_STEPS.md", "docs/SUBMISSION_PACK.md"]
 
 
 def _read(rel: str) -> str:

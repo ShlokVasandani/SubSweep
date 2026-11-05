@@ -129,7 +129,7 @@ identifiers, and each new protection was confirmed to fail its test when removed
 - A real use of PayPal that does something a bank statement alone cannot: catching a subscription that PayPal shows as cancelled
   but that is still being charged.
 - An AI layer that is useful without being trusted: grounded, redacted, auditable and optional.
-- 962 automated tests, including 21 real-browser checks and a security suite, and a polished interface with a night and day theme,
+- 1,094 automated tests, including 21 real-browser checks and a security suite, and a polished interface with a night and day theme,
   full keyboard use, labelled controls, and text contrast checked against the real colour values.
 
 ## What I learned
