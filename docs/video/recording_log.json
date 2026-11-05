@@ -1,0 +1,77 @@
+{
+  "video_lead_ms": 42,
+  "beats": [
+    {
+      "n": 1,
+      "label": "The problem",
+      "s": 0,
+      "e": 20,
+      "started": 0.76,
+      "work_done": 17.5,
+      "ended": 20,
+      "overran": false
+    },
+    {
+      "n": 2,
+      "label": "Upload",
+      "s": 20,
+      "e": 40,
+      "started": 20,
+      "work_done": 30.82,
+      "ended": 40.01,
+      "overran": false
+    },
+    {
+      "n": 3,
+      "label": "Detection",
+      "s": 40,
+      "e": 65,
+      "started": 40.01,
+      "work_done": 60.68,
+      "ended": 65,
+      "overran": false
+    },
+    {
+      "n": 4,
+      "label": "A flagged duplicate",
+      "s": 65,
+      "e": 90,
+      "started": 65,
+      "work_done": 80.99,
+      "ended": 90.01,
+      "overran": false
+    },
+    {
+      "n": 5,
+      "label": "PayPal status check",
+      "s": 90,
+      "e": 115,
+      "started": 90.01,
+      "work_done": 109.57,
+      "ended": 115,
+      "overran": false
+    },
+    {
+      "n": 6,
+      "label": "A drafted message",
+      "s": 115,
+      "e": 135,
+      "started": 115,
+      "work_done": 129.58,
+      "ended": 135,
+      "overran": false
+    },
+    {
+      "n": 7,
+      "label": "One question",
+      "s": 135,
+      "e": 150,
+      "started": 135,
+      "work_done": 146.2,
+      "ended": 150,
+      "overran": false
+    }
+  ],
+  "problems": [],
+  "total_seconds": 150
+}
