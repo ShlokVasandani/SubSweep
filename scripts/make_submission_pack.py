@@ -89,7 +89,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 | 2 | **The video is uploaded and public.** | https://youtu.be/YL8AeXLKieA (2:29, public, thumbnail set). Its closing card shows the repository address, and the repository is public, so that works. |
 | 3 | **PayPal beat = demo data.** | Recorded in `PAYPAL_MODE=mock`, so the panel carries the "Demo data" badge, and the captions say so. Nothing in the video presents it as live PayPal. |
 | 4 | **AI beat = built-in wording.** | No Anthropic key here, so the top bar reads "AI: built-in text" and the captions use the script's "AI is not on" sentence instead of claiming Claude wrote it. |
-| 5 | **One blank to fill in the pasted text.** | `[Update this line after your live run.]` at the end of the "What's next" bullet in the description: delete the bracket if you do not run PayPal or Claude live (the sentence above it is true as written). |
+| 5 | **No blanks left in the pasted text.** | The video and live-demo links are filled in and the placeholder line has been removed. If you later run PayPal or Claude live, update the "What's next" bullet and the status row in the README. |
 | 7 | **Add the captions file to the YouTube video.** | YouTube is showing its own auto-transcript, which mishears the product name ("Subeep", "Sub sweep"). In YouTube Studio, Subtitles, Add, Upload file, choose `subsweep-demo-voiced.srt`. |
 | 6 | **PayPal sandbox and the Anthropic API have never run live from here.** | The README and Devpost text say so truthfully. If you run them on your machine, update those lines (see `docs/MANUAL_STEPS.md`, section 1). |
 
