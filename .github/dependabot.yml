@@ -7,6 +7,8 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 0
+  # GitHub Actions: minor and patch updates only, grouped into one monthly pull request. A new major version of an action is a
+  # deliberate change, made by hand after reading its release notes.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -14,3 +16,6 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
