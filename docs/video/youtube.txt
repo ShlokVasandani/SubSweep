@@ -1,0 +1,25 @@
+TITLE
+SubSweep: find the subscriptions quietly draining you
+
+DESCRIPTION
+Your money is leaving quietly. SubSweep reads a bank or PayPal statement and finds the subscriptions you forgot, doubled up on, or that crept up in price, explains each one in plain English, checks PayPal, and drafts the message you could send. You decide: it never cancels anything and never sends anything.
+
+Try it live (drop in your own CSV; nothing is stored): https://subsweep-chi.vercel.app
+Code (MIT): https://github.com/ShlokVasandani/SubSweep
+
+0:00 The problem
+0:20 Upload
+0:40 Detection
+1:05 A flagged duplicate
+1:30 PayPal status check
+1:55 A drafted message
+2:15 One question
+
+About what you see: this demo runs on a made-up sample statement. The PayPal panel is bundled demo data and is labelled that way in the app. The explanations use the built-in wording; with an Anthropic key, Claude writes them and every figure is still checked against your data.
+
+Built for the PayPal AI Hackathon.
+
+#SubSweep #PayPal #PersonalFinance
+
+TAGS
+SubSweep, subscription tracker, find forgotten subscriptions, recurring charges, PayPal, PayPal API, personal finance, FastAPI, Claude, Anthropic, explainable, hackathon, PayPal AI Hackathon, Python

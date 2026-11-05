@@ -161,6 +161,7 @@ Visibility: **Public**. After uploading, open the link in a private window to co
 - [ ] No `[square bracket]` placeholder is left in the text you pasted.
 - [ ] Deadline: Thursday 12 November 2026, 12:00 pm Pacific. The project must show as **Submitted**, not Draft.
 """
+    (ROOT / "docs" / "video" / "youtube.txt").write_text(f"TITLE\n{yt_title}\n\nDESCRIPTION\n{yt_description}\n\nTAGS\n{yt_tags}\n", encoding="utf-8")
     dest = ROOT / "docs" / "SUBMISSION_PACK.md"
     dest.write_text(md, encoding="utf-8")
     print(f"wrote {dest.relative_to(ROOT)} ({len(md)} characters)")
