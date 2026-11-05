@@ -7,7 +7,7 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 
 | | Item | Why |
 |---|---|---|
-| 1 | **The video is silent.** | It paces every click to the 2:30 script. Record a voice-over from `docs/DEMO_SCRIPT.md`, or upload it with `subsweep-demo.srt` as captions. Say the word and I can generate a voice-over (it spends ElevenLabs credits, so I have not done it). |
+| 1 | **Use `subsweep-demo-voiced.mp4` (it has the voice-over).** | The silent `subsweep-demo.mp4` is kept as a fallback. The voice-over is your ElevenLabs take, placed sentence by sentence against the clicks; `subsweep-demo-voiced.srt` holds captions timed to it. A few sentences were trimmed or reordered from `docs/DEMO_SCRIPT.md` to match what is on screen (the demo-data sentence plays while the PayPal panel is showing). |
 | 2 | **The video's closing card shows `github.com/ShlokVasandani/SubSweep`.** | The repository must be public before anyone watches it. Making it public is your call; I have not changed it. |
 | 3 | **PayPal beat = demo data.** | Recorded in `PAYPAL_MODE=mock`, so the panel carries the "Demo data" badge, and the captions say so. Nothing in the video presents it as live PayPal. |
 | 4 | **AI beat = built-in wording.** | No Anthropic key here, so the top bar reads "AI: built-in text" and the captions use the script's "AI is not on" sentence instead of claiming Claude wrote it. |
@@ -18,8 +18,10 @@ edit `docs/DEVPOST.md`, then re-run the script, rather than editing this file.
 
 | File | Where it goes | Details |
 |---|---|---|
-| `docs/video/subsweep-demo.mp4` | YouTube (visibility **Public**), then the Devpost video link | 2:29.4 long, 1920x1080, h264, 30 fps, 18.3 MB, no audio. sha256 `1ffea2575c5fc6ae...` |
-| `docs/video/subsweep-demo.srt` | YouTube captions (optional) | 43 captions, matching the recorded variants |
+| `docs/video/subsweep-demo-voiced.mp4` | **YouTube (visibility Public), then the Devpost video link** | 2:29.4, 1920x1080, H.264 + AAC voice-over, about 21 MB |
+| `docs/video/subsweep-demo-voiced.srt` | YouTube captions for the voiced video | 41 captions timed to the voice-over |
+| `docs/video/subsweep-demo.mp4` | Silent fallback | 2:29.4 long, 1920x1080, h264, 30 fps, 18.3 MB, no audio. sha256 `1ffea2575c5fc6ae...` |
+| `docs/video/subsweep-demo.srt` | Captions for the silent version only | 43 captions, matching the recorded variants |
 | `docs/screenshots/*.jpg` | Devpost image gallery, in this order | see below |
 | Repository | Devpost "Try it out" link | https://github.com/ShlokVasandani/SubSweep (**must be public by the time you submit**) |
 
