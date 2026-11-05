@@ -133,6 +133,50 @@ const go = async (page, route) => { await page.click(`#tabs a[data-route="${rout
     ok(bad.length === 0, bad.join(", "));
   });
 
+  // Display type has tight line-height, so a word's box is shorter than its ink (descenders hang below it). That is only safe while nothing in the
+  // headline's chain clips. A future "overflow: hidden" line mask for the reveal would cut the g in "leaving" and the y in "quietly".
+  await check(browser, "hero_descenders_not_clipped", async (page) => {
+    const bad = [];
+    for (const w of [375, 768, 1440]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.goto(BASE, { waitUntil: "networkidle" });
+      await page.waitForFunction(() => [...document.querySelectorAll("#hero-title .w")].every((n) => getComputedStyle(n).opacity === "1"), null, { timeout: 8000 });
+      const r = await page.evaluate(async () => {
+        const h = document.querySelector("#hero-title");
+        await document.fonts.ready;
+        const clippers = [];
+        for (let n = h; n && n !== document.body; n = n.parentElement) {   // body is the page scroller (overflow-x:hidden makes its overflow-y compute to auto) and cannot clip the headline
+          const cs = getComputedStyle(n);
+          if (cs.overflowY !== "visible" || cs.clipPath !== "none" || /paint|content|strict/.test(cs.contain)) clippers.push(n.tagName + "." + n.className);
+        }
+        for (const n of h.querySelectorAll(".w, em")) {
+          const cs = getComputedStyle(n);
+          if (cs.overflowY !== "visible" || cs.clipPath !== "none") clippers.push("word:" + n.textContent);
+        }
+        const words = [...h.querySelectorAll(".w")].map((n) => ({ t: n.textContent, h: n.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(n).lineHeight) || 0 }));
+        const lines = new Set([...h.querySelectorAll(".w")].map((n) => Math.round(n.getBoundingClientRect().top)));
+        return { clippers, words, lines: lines.size };
+      });
+      if (r.clippers.length) bad.push(`${w}px clipped by ${r.clippers.join(", ")}`);
+      for (const word of r.words) if (word.h + 1 < word.lh) bad.push(`${w}px "${word.t}" box ${word.h.toFixed(1)} < line-height ${word.lh.toFixed(1)}`);
+      // the pixels just under the baseline of the descender words must actually contain ink (the g and y are drawn, not cut flat)
+      const box = await page.evaluate(() => { const ws = [...document.querySelectorAll("#hero-title .w")]; const out = {}; for (const n of ws) if (/leaving|quietly/.test(n.textContent)) { const b = n.getBoundingClientRect(); out[n.textContent] = { x: b.left, y: b.top, w: b.width, h: b.height, fs: parseFloat(getComputedStyle(n).fontSize) }; } return out; });
+      for (const [word, b] of Object.entries(box)) {
+        const y0 = Math.max(0, b.y + b.h - b.fs * 0.02);           // from just inside the box bottom downwards: the hanging part of g / y
+        const shot = await page.screenshot({ clip: { x: Math.max(0, b.x), y: y0, width: Math.min(b.w, w - Math.max(0, b.x)), height: Math.max(2, b.fs * 0.2) } });
+        const flat = await page.evaluate(async (b64) => {
+          const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+          const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+          const d = g.getImageData(0, 0, c.width, c.height).data; let lo = 255, hi = 0;
+          for (let i = 0; i < d.length; i += 4) { const l = (d[i] + d[i + 1] + d[i + 2]) / 3; lo = Math.min(lo, l); hi = Math.max(hi, l); }
+          return hi - lo < 40;                                     // no contrast at all in the band = nothing drawn there
+        }, shot.toString("base64"));
+        if (flat) bad.push(`${w}px no descender ink under "${word}"`);
+      }
+    }
+    ok(bad.length === 0, bad.join(" | "));
+  });
+
   await check(browser, "subscriptions_sort_filter_expand", async (page) => {
     await demo(page); await go(page, "subscriptions");
     eq(await page.locator("tbody tr.row").count(), 10, "ten rows");
