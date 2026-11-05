@@ -235,7 +235,10 @@ every mood palette at its worst case: body text clears WCAG AAA (7:1) on glass a
 **Security and privacy.** Statements are processed in memory and never written to disk (only your dismiss decisions are
 stored). Uploads are limited to 5 MB, must be `.csv`, `.tsv` or `.txt`, and are rejected if they look binary. A strict
 Content-Security-Policy (`script-src 'self'`, no inline script, no external hosts) and the usual hardening headers are sent on
-every response; the session cookie is `HttpOnly` and `SameSite=Strict`; AI use is capped per statement. Text from your statement
+every response; the session cookie is `HttpOnly` and `SameSite=Strict`; AI use is capped per statement. Oversized request bodies are
+cut off while they stream in (a 413, never written to disk), card and account numbers, phone numbers, email addresses and API keys are
+redacted from everything sent to the model and from the audit log, and a test suite attacks the running API to keep it that way
+(`tests/test_security.py`). Text from your statement
 is inserted into the page with `textContent` only, which a test enforces by scanning the code and by loading a statement with
 a hostile merchant name and filename in a real browser.
 

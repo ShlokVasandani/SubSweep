@@ -36,6 +36,19 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   empty / error states, Chart.js (vendored) charts, mapper dialog, SQLite decisions store, reproducible 24-month demo statement.
   Contrast, icons, CSP-safety and escaping are tested statically; 19 real-browser checks run through Playwright.
 
+- **Phase 7 – testing, demo data and hardening**: the planted-findings end-to-end tests and the seeded demo generator were already in place
+  from Phase 6 (24-month, see Decisions). New this phase, found by attacking the running app rather than by reading code:
+  - **Real leak fixed**: an email address inside a bank description (`john.doe@gmail.com`) was mangled by merchant cleaning into
+    `john.doe@ gmail`, which no email pattern recognised, so `john.doe` reached the model and the audit log. Cleaning now drops full
+    addresses first, and the redactor has a backstop for a dangling `name@`.
+  - **Body guard**: an over-limit upload used to be spooled to disk by the multipart parser before the size check ran. A streaming
+    guard now refuses it with a 413 (declared or chunked) without reading it; 60 MB is refused in about 0.1 s.
+  - **One 500 removed**: a CSV with a single enormous cell raised `csv.Error` out of ingestion; it is now a friendly 422.
+  - `PAYPAL_MANAGE_URL` (rendered as a link) is only honoured when it is `https:`.
+  - `tests/test_security.py` (29 tests): identifiers in statements and questions never reach a model, the audit log or the UI; fake secrets
+    in the environment never appear in logs, console output, responses or the audit log (including on error paths); hostile uploads;
+    link schemes; headers. Five hardening changes were reverted one at a time to confirm each has a test that fails without it.
+
 ## Next
 - Add `ANTHROPIC_API_KEY` and run the AI layer live once (`python -m subsweep.ai mock --explain --ask "..."`): the request
   shape and error mapping are tested against a fake client, but no real API call has been made from the cloud session.
