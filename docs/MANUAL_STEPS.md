@@ -9,7 +9,7 @@ already its default branch, so there is nothing to merge before judges see the c
 These two checks are the only parts of the project that have never run against the real service, because the build environment
 could not reach PayPal and had no keys. Do them first: if either one fails, tell me the exact error rather than working around it.
 
-- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `1090 passed, 4 skipped`.
+- [ ] **Run the whole test suite on your machine.** `python -m pytest` should end `1130 passed, 4 skipped`.
 - [ ] **PayPal sandbox, live.** Follow [Live sandbox setup](../README.md#live-sandbox-setup-optional-about-10-minutes), approve the
       subscriptions as the buyer, then `python -m pytest tests/integration -v`. Success: the checks pass or skip with a clear
       reason (a missing Transaction Search scope, or subscription IDs PayPal does not recognise).

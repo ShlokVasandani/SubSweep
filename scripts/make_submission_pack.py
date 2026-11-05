@@ -20,8 +20,8 @@ _spec.loader.exec_module(cs)
 REPO = "https://github.com/ShlokVasandani/SubSweep"
 VIDEO = ROOT / "docs" / "video" / "subsweep-demo.mp4"
 SRT = ROOT / "docs" / "video" / "subsweep-demo.srt"
-TESTING = ("pip install -r requirements.txt\nPAYPAL_MODE=mock python -m subsweep\n"
-           "Open http://127.0.0.1:8000 and click \"Try the sample data\". No account, key or network needed.")
+TESTING = ("Open https://subsweep-chi.vercel.app, click \"Try the sample data\" or drop in your own bank or PayPal CSV (up to 4 MB).\n"
+           "To run it yourself: pip install -r requirements.txt, then PAYPAL_MODE=mock python -m subsweep, and open http://127.0.0.1:8000. No account, key or network needed.")
 SHOTS = [("01-landing.jpg", "the landing page"), ("02-unravel.jpg", "the scroll-driven \"statement is noise\" scene"),
          ("03-overview.jpg", "the overview with the health score"), ("04-findings.jpg", "a PayPal mismatch finding with its plain-English explanation")]
 
@@ -131,7 +131,7 @@ Visibility: **Public**. After uploading, open the link in a private window to co
 
 ### Try it out links
 
-{fenced(REPO + chr(10) + "[YouTube link: fill in after uploading]")}
+{fenced(REPO + chr(10) + "https://subsweep-chi.vercel.app" + chr(10) + "[YouTube link: fill in after uploading]")}
 
 ### Testing instructions (if the form has a field for it)
 

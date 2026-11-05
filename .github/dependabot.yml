@@ -1,11 +1,16 @@
 version: 2
 updates:
+  # Python: no version-bump pull requests. They would only raise the minimum versions in requirements.txt (and invite surprise major
+  # upgrades); security updates still arrive.
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 0
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

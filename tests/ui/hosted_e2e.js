@@ -77,6 +77,11 @@ const out = []; const rec = (name, ok, detail = "") => { out.push({ name, ok, de
   await page.setInputFiles("#file", path.join(FX, "notes.pdf.csv")); await page.waitForSelector("#drop-error:not([hidden])", { timeout: 10000 });
   rec("a non-CSV file gets a friendly message", /binary|PDF|CSV/i.test(await page.locator("#drop-error").innerText()));
 
+  await page.goto(BASE, { waitUntil: "networkidle" }); await page.waitForTimeout(500);
+  const before = api.length;
+  await page.setInputFiles("#file", path.join(FX, "big.csv")); await page.waitForSelector("#drop-error:not([hidden])", { timeout: 10000 });
+  rec("a file over the limit is stopped in the browser with a clear message", /4 MB/.test(await page.locator("#drop-error").innerText()) && api.filter((a) => a.path === "/api/analyze").length === api.slice(0, before).filter((a) => a.path === "/api/analyze").length, "no request was sent");
+
   // ---------- 6. nothing went wrong in the console, and every API call succeeded
   const bad = api.filter((a) => a.status >= 400 && !(a.path === "/api/analysis" && a.status === 404) && !(a.path === "/api/analyze" && [415, 422].includes(a.status)));
   rec("no console errors or page errors", problems.length === 0, problems.slice(0, 3).join(" | "));

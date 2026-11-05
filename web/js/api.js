@@ -34,7 +34,8 @@ async function call(path, opts = {}) {
   try { body = await res.json(); } catch { /* non-JSON */ }
   if (!res.ok) {
     const e = body?.error;
-    throw new ApiError(res.status, e?.code || "error", e?.message || "Something went wrong. Please try again.", e?.details || {});
+    const fallback = res.status === 413 ? "That's more than a statement should need. Try exporting a shorter date range." : "Something went wrong. Please try again.";
+    throw new ApiError(res.status, e?.code || "error", e?.message || fallback, e?.details || {});
   }
   return body;
 }

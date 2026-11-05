@@ -168,6 +168,8 @@ function pick(files) {
   const f = files?.[0];
   if (!f) return;
   if (state.health?.hosted && state.health.uploads === false) { dropError(HOSTED_NOTE); return; }
+  const limitMb = state.health?.limits?.max_upload_mb ?? 5;                 // check before sending: a host can refuse a big body with a bare, unfriendly error
+  if (f.size > limitMb * 1024 * 1024) { dropError(`That file is ${(f.size / 1048576).toFixed(1)} MB, which is more than a statement should need (the limit here is ${limitMb} MB). Try exporting a shorter date range.`); return; }
   if (!/\.(csv|tsv|txt)$/i.test(f.name)) { dropError("That doesn't look like a statement export. Please choose a .csv file."); return; }
   submit({ file: f });
 }

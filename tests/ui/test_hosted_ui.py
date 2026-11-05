@@ -45,6 +45,7 @@ def hosted_run(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("hosted")
     (tmp / "odd_headers.csv").write_text("When,What,HowMuch\n" + "".join(f"2026-{m:02d}-05,NETFLIX.COM,-15.49\n" for m in range(1, 7)))
     (tmp / "notes.pdf.csv").write_bytes(b"%PDF-1.7 not a statement")
+    (tmp / "big.csv").write_bytes(b"Date,Description,Amount\n" + b"2026-01-01,A,-1\n" * 300_000)          # about 4.8 MB: over the hosted 4 MB limit
     backends, procs = [free_port() for _ in range(3)], []
     proxy_port = free_port()
     try:

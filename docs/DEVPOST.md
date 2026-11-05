@@ -31,7 +31,7 @@ through PayPal's automatic payments are the hardest to see because the billing l
 
 ## What it does
 
-You drop in a CSV from a bank, a card or PayPal (or click "Try the sample data"). SubSweep:
+You drop in a CSV from a bank, a card or PayPal (or click "Try the sample data"). It is live at **https://subsweep-chi.vercel.app**, so you can try it with your own file. SubSweep:
 
 1. **Parses and cleans it.** It detects the format, handles day-first dates and different number styles, turns
    `SQ *NETFLIX.COM 08/12 LOS GATOS CA` into `Netflix`, and removes duplicate rows.
@@ -104,7 +104,7 @@ user's own spending by choosing one of a fixed set of pandas analyses and wordin
 
 ### Privacy and safety
 
-Statements are processed in memory and never written to disk; the only thing stored is which findings you dismissed. Uploads are
+Statements are processed in memory and never written to disk; the only thing kept is which findings you dismissed. The live demo runs on a serverless host, where no request shares memory with another, so the browser keeps your statement in the tab and re-sends it with each action; the server analyses it in memory and keeps nothing (decisions live in your own cookie). This was tested in a real browser against three separate server processes that share nothing, and the deployed site was checked as an anonymous visitor. Uploads are
 limited to 5 MB and checked by type and content, oversized bodies are cut off while they stream in, the page is served with a
 strict Content-Security-Policy, and text from a statement is only ever inserted into the page as text. A security test suite
 attacks the running API with hostile files, oversized cells, secrets in the environment and statements full of personal
@@ -129,7 +129,7 @@ identifiers, and each new protection was confirmed to fail its test when removed
 - A real use of PayPal that does something a bank statement alone cannot: catching a subscription that PayPal shows as cancelled
   but that is still being charged.
 - An AI layer that is useful without being trusted: grounded, redacted, auditable and optional.
-- 1,094 automated tests, including 21 real-browser checks and a security suite, and a polished interface with a night and day theme,
+- 1,134 automated tests, including real-browser checks against a multi-instance deployment model and a security suite, and a polished interface with a night and day theme,
   full keyboard use, labelled controls, and text contrast checked against the real colour values.
 
 ## What I learned
@@ -163,7 +163,8 @@ Python, pandas, NumPy, rapidfuzz, FastAPI, uvicorn, SQLite, httpx, PyYAML, JavaS
 
 ## Try it out links
 
-- Code: https://github.com/ShlokVasandani/SubSweep  [make the repository public first]
+- Code: https://github.com/ShlokVasandani/SubSweep
+- Live demo: https://subsweep-chi.vercel.app
 - Video: [your YouTube link, set to Public]
 
 ## Image gallery (upload from `docs/screenshots/`)

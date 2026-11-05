@@ -5,6 +5,8 @@ All notable changes. The project follows [Semantic Versioning](https://semver.or
 ## [Unreleased]
 
 ### Added
+- **Live demo** at https://subsweep-chi.vercel.app, deployed from this repository on Vercel (every push redeploys). Verified as an anonymous visitor from outside: real upload, history, explain, draft, ask, dismiss and friendly errors.
+- Browser-side size check, so an oversized file gets a clear message before anything is sent (a host's own limit would otherwise return a bare error).
 - **Hosted build** for serverless platforms such as Vercel, with real CSV uploads and no server-side state: the browser keeps the statement and re-sends it with each action, the server analyses it in memory and keeps nothing. Tested against three separate server processes behind a round-robin proxy in a real browser.
 - `uploads=False` / `SUBSWEEP_HOSTED_UPLOADS=off` for a sample-data-only hosted demo.
 - Continuous integration (Python 3.11 to 3.13, plus Chromium browser tests), Dependabot, issue and pull-request templates, contributing and security guides.

@@ -6,6 +6,12 @@ message you could send. **You decide. It never cancels anything and never sends 
 
 Built for the PayPal AI Hackathon. MIT licensed.
 
+[![CI](https://github.com/ShlokVasandani/SubSweep/actions/workflows/ci.yml/badge.svg)](https://github.com/ShlokVasandani/SubSweep/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
+
+**Try it now: <https://subsweep-chi.vercel.app>** Drop in your own CSV, or click "Try the sample data". Nothing is stored.
+
 ![SubSweep landing page](docs/screenshots/01-landing.jpg)
 
 ## The problem
@@ -36,8 +42,8 @@ save in a year, and a draft message so acting on one takes a minute.
   without double counting. [More below](#how-paypal-is-used).
 - **Uses AI only where words help.** Claude explains each finding, drafts a polite message, and answers questions about your own
   spending, but every figure it states is checked against the data it was given. [More below](#how-ai-is-used).
-- **Keeps your data on your computer.** Statements live in memory, card and account numbers are redacted before any model call,
-  and the only thing stored is which findings you dismissed.
+- **Stores nothing.** Statements live in memory (on your computer, or on the hosted version only for the moment an action runs), card
+  and account numbers are redacted before any model call, and the only thing kept is which findings you dismissed.
 
 | Overview | Findings |
 |---|---|
@@ -86,6 +92,38 @@ do in a browser, so without credentials (or with `PAYPAL_MODE=mock`) SubSweep us
 like PayPal's real responses. The panel is labelled "Demo data" and the notice reads "Showing bundled demo data (PayPal mock
 mode). Nothing here comes from a live PayPal account." Live use is described in [Live sandbox setup](#live-sandbox-setup-optional-about-10-minutes).
 
+### The live demo, and deploying your own
+
+**<https://subsweep-chi.vercel.app>** is this same app on Vercel. You can upload a real CSV (up to 4 MB) or use the sample statement. Because a serverless host
+keeps no state for a visitor (every request may be answered by a different instance), the hosted build works differently from running it
+locally, and it is worth knowing exactly how:
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (holds your CSV)
+    participant V as Vercel function (any instance)
+    B->>V: POST /api/analyze with the CSV
+    V-->>B: overview as JSON (the CSV is discarded)
+    B->>V: each later action: the CSV plus what you asked for
+    V->>V: rebuild the analysis in memory (cached briefly)
+    V-->>B: the result (nothing is stored or logged)
+```
+
+- **Your statement lives in your browser tab.** Each action sends it over HTTPS to be analysed in memory; the server keeps nothing, writes
+  nothing to disk and does not log request bodies. Reload the page and it is gone.
+- **Your dismiss decisions live in a cookie**, so one visitor's decisions never affect another's.
+- **Your own statements get no PayPal data.** The sample statement shows the bundled, clearly labelled demo PayPal data; an uploaded
+  statement is never merged with fictional rows.
+- **AI wording is built in** unless the operator turns the model on (`SUBSWEEP_HOSTED_AI=on` plus `ANTHROPIC_API_KEY`), so a public link
+  cannot spend anyone's API credits.
+- The entrypoint is [`app.py`](app.py) and the platform settings are in [`vercel.json`](vercel.json). The behaviour above is tested in a
+  real browser against three separate server processes that share nothing (`tests/ui/test_hosted_ui.py`).
+
+To deploy your own copy: fork the repository, import it on [Vercel](https://vercel.com/new) (it detects FastAPI from `app.py`; no
+environment variables are needed), and turn off Vercel Authentication under Settings, Deployment Protection if you want the link public.
+Set `SUBSWEEP_HOSTED_UPLOADS=off` for a sample-data-only demo. Any host that runs a long-lived Python process also works with plain
+`python -m subsweep`, which keeps the analysis in memory on the server instead.
+
 ### Developer commands
 
 ```bash
@@ -94,7 +132,8 @@ python -m subsweep.detect my_statement.csv --excluded    # recurring charges, pl
 python -m subsweep.findings my_statement.csv             # findings, savings and health score
 python -m subsweep.ai my_statement.csv --explain --ask "What do I spend on streaming?"   # works without a key
 python -m subsweep.paypal status                         # PayPal view (honours PAYPAL_MODE)
-python -m pytest                                         # 1094 tests; browser and live PayPal checks skip themselves when unavailable
+pip install -r requirements-dev.txt                      # adds pytest
+python -m pytest                                         # 1134 tests; browser and live PayPal checks skip themselves when unavailable
 ```
 
 ## Architecture
@@ -145,6 +184,7 @@ only, never as HTML.
 |---|---|---|
 | Nothing | Default (no keys set) | Everything runs locally; AI features use built-in templates |
 | PayPal sandbox requests | Only if you add sandbox credentials | OAuth, and read-only `GET` calls |
+| The hosted demo's server | Only on the live demo | Your statement, over HTTPS, on each action: analysed in memory and discarded. Run it locally if you would rather it never leave your machine |
 | Anthropic API requests | Only if you set `ANTHROPIC_API_KEY` | Redacted fact sheets (merchant, amounts, dates, cycle): never IDs, raw bank descriptions, card or account numbers, emails or phone numbers. "Show data used" reveals exactly what was sent |
 
 ## How PayPal is used
@@ -411,14 +451,14 @@ Be clear about what has and hasn't been run, because it affects how far to trust
 | Area | State |
 |---|---|
 | Ingestion, detection, findings, health score | Fully tested, including false-positive cases (groceries, fuel and coffee must not be flagged) and mutation checks that revert a rule to confirm a test fails |
-| Web app and API | Tested end to end, including 21 real-browser checks (Chromium via Playwright) and a security suite that attacks the running API |
+| Web app and API | Tested end to end, including 21 real-browser checks of the local build, a 20-step browser run of the hosted build against three separate server instances (Chromium via Playwright), and a security suite that attacks the running API. The deployed site was also exercised as an anonymous visitor from outside |
 | PayPal integration | Written against PayPal's published OpenAPI schemas and tested against simulated PayPal responses. **Not yet run against the live sandbox from the build environment** (PayPal's hosts were not reachable there and no credentials were available). `python -m pytest tests/integration -v` runs read-only live checks once credentials are set, and skips cleanly otherwise |
 | AI layer | Tested against a scripted fake model (request shape, error mapping, grounding, guardrails, redaction, audit log). **Not yet run against the live Anthropic API.** Without a key the built-in templates are used, and the interface shows "AI: built-in text" |
 
 ## Tests
 
 ```bash
-python -m pytest              # 1094 tests: 1090 pass, 4 live-PayPal checks skip without credentials
+python -m pytest              # 1134 tests: 1130 pass, 4 live-PayPal checks skip without credentials
 python -m pytest tests/ui     # real-browser checks (needs Node and Playwright; skipped automatically otherwise)
 ```
 
@@ -439,7 +479,9 @@ subsweep/
 web/           the frontend: HTML, CSS and vanilla JS modules, no build step (Chart.js and fonts vendored)
 config/        rules.yaml: every detection and finding threshold
 sample_data/   demo and format-test statements
+app.py         entrypoint for the hosted (serverless) build; vercel.json holds its platform settings
 scripts/       demo data generator, PayPal sandbox seed, demo video recorder, captions and submission-pack builders
+.github/       CI (Python 3.11 to 3.13 and a browser job), issue and PR templates, Dependabot
 tests/         unit, API, security, frontend and browser tests
 docs/          screenshots, Devpost text, demo video script, captions and recording log (the mp4 is not committed), manual checklist, submission pack
 ```

@@ -71,6 +71,18 @@ Build window: started 2026-11-04 (after the Oct 1 start). Submission closes 2026
   - Found while checking the README: uploading `sample_data/demo_statement.csv` without `PAYPAL_MODE=mock` gives 6 findings and no PayPal panel
     (7 with it, and with the sample-data button). The README and the video script now say to start with `PAYPAL_MODE=mock`.
 
+- **Phase 9 – hosted build, live demo, repo polish**: a Vercel deployment with real CSV uploads and no server-side state. A serverless host
+  answers each request from a different instance with no shared memory or writable disk, so the browser keeps the statement and re-sends it
+  with each action (`StatelessMiddleware`); the server rebuilds the analysis in memory, keeps two warm per instance, and each visitor's
+  decisions live in a cookie. Uploads are capped at 4 MB (Vercel's request limit is 4.5 MB) and are never merged with the fictional PayPal
+  demo data. 38 new API tests, each property mutation-checked, plus a real-browser run (20 steps) against three server processes behind a
+  round-robin proxy where API calls provably switch instance. Deployed via the Vercel connection and verified as an anonymous visitor from a
+  Vercel sandbox (23 of 23). Also: CI on Python 3.11 to 3.13 plus a Chromium job (green), Dependabot (pip version bumps off), issue and PR
+  templates, CONTRIBUTING, SECURITY, CHANGELOG, `requirements-dev.txt`.
+  - Found while testing: the PayPal panel told an uploader to "Set PAYPAL_MODE=mock", an instruction for running locally; and a file over the
+    host's body limit got a bare platform error. Both now have friendly, accurate messages.
+  - Vercel Authentication was on for every `vercel.app` URL by default; it was turned off (with the owner's approval) so the demo is public.
+
 ## Next
 - Add `ANTHROPIC_API_KEY` and run the AI layer live once (`python -m subsweep.ai mock --explain --ask "..."`): the request
   shape and error mapping are tested against a fake client, but no real API call has been made from the cloud session.
